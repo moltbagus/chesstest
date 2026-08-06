@@ -10,6 +10,8 @@ credentials
 **/.env.*
 
 .vercel
-vercel.json
 dist/
 build/
+# Vercel configuration (added by deployment script)
+# Note: vercel.json should be committed for production deployment
+vercel.json

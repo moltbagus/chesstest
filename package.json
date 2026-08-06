@@ -1,0 +1,30 @@
+{
+  "name": "chesstest",
+  "version": "1.0.0",
+  "description": "A complete, cute chess game with AI opponent",
+  "main": "index.html",
+  "scripts": {
+    "dev": "echo \"Static site - no build required\"",
+    "build": "echo \"Static site - no build required\"",
+    "start": "echo \"Use Vercel for hosting\"",
+    "deploy": "echo \"Use 'vercel --prod' for production deployment\""
+  },
+  "keywords": [
+    "chess",
+    "game",
+    "webgame",
+    "pwa",
+    "progressive-web-app"
+  ],
+  "author": "sirshibaninja",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/moltbagus/chesstest"
+  },
+  "browserslist": [
+    ">0.25%",
+    "not dead",
+    "not op_mini all"
+  ]
+}

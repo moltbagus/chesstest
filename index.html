@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chessy — a cute chess game</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="page">
+
+  <header class="top">
+    <h1 class="logo">&#9823; Chessy <span class="heart">&#10084;</span></h1>
+    <p class="tagline">a tiny, cute chess game — no ads, no engine downloads, just you &amp; the board</p>
+  </header>
+
+  <main class="layout">
+    <section class="board-wrap">
+      <div id="board" class="board"></div>
+      <div id="banner" class="banner hidden"></div>
+    </section>
+
+    <aside class="panel">
+      <div class="controls">
+        <button id="newGame" class="btn">&#8635; New game</button>
+        <button id="undo" class="btn">&#8617; Undo</button>
+        <button id="hint" class="btn">&#128161; Hint</button>
+        <label class="pill"><input type="checkbox" id="vsAI" checked> Play vs computer</label>
+        <label class="pill">Level
+          <select id="level">
+            <option value="1">Easy</option>
+            <option value="2" selected>Medium</option>
+            <option value="3">Hard</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="captured">
+        <div class="cap-row"><span class="cap-label">You took</span><span id="capWhite" class="caps"></span></div>
+        <div class="cap-row"><span class="cap-label">Bot took</span><span id="capBlack" class="caps"></span></div>
+      </div>
+
+      <div id="turn" class="turn">White to move</div>
+
+      <div class="moves-wrap">
+        <div class="moves-title">Moves</div>
+        <ol id="moveList" class="moves"></ol>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="foot">Made with &#10084; and a little &#9822; &nbsp;·&nbsp; move list in algebraic notation</footer>
+</div>
+
+<div id="promoModal" class="modal hidden">
+  <div class="modal-card">
+    <p class="promo-title">Promote to&#8230;</p>
+    <div id="promoChoices" class="promo-choices"></div>
+  </div>
+</div>
+
+<script src="js/chess.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

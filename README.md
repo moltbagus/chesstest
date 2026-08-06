@@ -29,6 +29,10 @@ A simple, cute chess game — vanilla JavaScript chess engine with AI, pastel th
 - AI: minimax with alpha-beta pruning + piece-square tables
 - Theme: CSS custom properties, pastel palette
 
+## Credits
+
+Made by [sirshibaninja](https://x.com/sirshibaninja)
+
 ## License
 
 MIT

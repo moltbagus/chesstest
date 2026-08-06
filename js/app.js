@@ -1,754 +1,579 @@
-
-// Theme Management
-(function() {
-  const themes = ['default', 'dark', 'pastel', 'high-contrast', 'wood', 'neon'];
-  const defaultTheme = 'default';
-
-  // Load saved theme from localStorage
-  function loadTheme() {
-    const savedTheme = localStorage.getItem('chesstest-theme') || defaultTheme;
-    applyTheme(savedTheme);
-    // Update the select dropdown
-    const themeSelect = document.getElementById('theme-select');
-    if (themeSelect) themeSelect.value = savedTheme;
-  }
-
-  // Apply theme to document
-  function applyTheme(theme) {
-    // Remove all theme classes
-    document.documentElement.classList.remove(...themes.map(t => 'theme-' + t));
-
-    if (theme !== 'default') {
-      document.documentElement.classList.add('theme-' + theme);
-    }
-
-    // Save to localStorage
-    localStorage.setItem('chesstest-theme', theme);
-
-    // Re-render board if it exists
-    if (typeof render === 'function') {
-      render();
-    }
-  }
-
-  // Theme selector event listener
-  function initThemeSelector() {
-    const themeSelect = document.getElementById('theme-select');
-    const resetBtn = document.getElementById('reset-settings');
-
-    if (themeSelect) {
-      themeSelect.addEventListener('change', (e) => {
-        applyTheme(e.target.value);
-      });
-    }
-
-    if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
-        applyTheme(defaultTheme);
-        if (themeSelect) themeSelect.value = defaultTheme;
-      });
-    }
-  }
-
-  // Initialize theme selector when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      loadTheme();
-      initThemeSelector();
-    });
-  } else {
-    loadTheme();
-    initThemeSelector();
-  }
-
-  // Expose theme functions globally
-  window.ChesstestThemes = {
-    applyTheme,
-    loadTheme,
-    themes
-  };
-})();
-
-
-// Rating System Logic
-(function() {
-  // Initialize rating display
-  function initRatingDisplay() {
-    updateRatingDisplay();
-    initResetRatingButton();
-  }
-
-  // Update rating display with current stats
-  function updateRatingDisplay() {
-    if (typeof Chess === 'undefined') {
-      setTimeout(updateRatingDisplay, 100);
-      return;
-    }
-
-    const stats = window.chessEngine ? window.chessEngine.getRatingStats() : {
-      current: 1500,
-      gamesPlayed: 0,
-      wins: 0,
-      losses: 0,
-      draws: 0,
-      winRate: 0,
-      bestScore: 1500
-    };
-
-    const currentRating = document.getElementById('current-rating');
-    const ratingLabel = document.querySelector('.rating-label');
-    const ratingGames = document.getElementById('rating-games');
-    const ratingWinRate = document.getElementById('rating-winrate');
-    const ratingBest = document.getElementById('rating-best');
-
-    if (currentRating) {
-      currentRating.textContent = stats.current;
-      currentRating.style.color = window.chessEngine ? 
-        window.chessEngine.getRatingColor(stats.current) : '#1500';
-    }
-
-    if (ratingLabel) {
-      ratingLabel.textContent = window.chessEngine ? 
-        window.chessEngine.getRatingLabel(stats.current) : 'Beginner';
-    }
-
-    if (ratingGames) {
-      ratingGames.textContent = 'Games: ' + stats.gamesPlayed;
-    }
-
-    if (ratingWinRate) {
-      ratingWinRate.textContent = 'Win Rate: ' + stats.winRate + '%';
-    }
-
-    if (ratingBest) {
-      ratingBest.textContent = 'Best: ' + stats.bestScore;
-    }
-  }
-
-  // Initialize reset rating button
-  function initResetRatingButton() {
-    const resetBtn = document.getElementById('reset-rating');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
-        if (confirm('Reset your chess rating to 1500? This cannot be undone.')) {
-          // Clear rating progress
-          localStorage.removeItem('chesstest-rating-progress');
-
-          // Update display
-          updateRatingDisplay();
-
-          // Show notification
-          showNotification('Rating reset to 1500!');
-        }
-      });
-    }
-  }
-
-  // Show notification
-  function showNotification(message) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = 'notification';
-    notification.textContent = message;
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: var(--ring);
-      color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      z-index: 10000;
-      animation: slideIn 0.3s ease;
-    `;
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-      notification.style.animation = 'slideOut 0.3s ease';
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification);
-        }
-      }, 300);
-    }, 2000);
-  }
-
-  // Add CSS for notifications and rating animations
-  function addRatingStyles() {
-    const style = document.createElement('style');
-    style.textContent = `      @keyframes slideIn {
-        from { opacity: 0; transform: translateX(100%); }
-        to { opacity: 1; transform: translateX(0); }
-      }
-
-      @keyframes slideOut {
-        from { opacity: 1; transform: translateX(0); }
-        to { opacity: 0; transform: translateX(100%); }
-      }
-
-      .rating-display {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px;
-        background: var(--bg);
-        border-radius: 8px;
-        margin: 10px 0;
-        border: 2px solid var(--border);
-      }
-
-      .rating-label {
-        font-weight: 600;
-        padding: 4px 8px;
-        border-radius: 4px;
-        background: var(--ring);
-        color: white;
-      }
-
-      .rating-stats {
-        display: flex;
-        gap: 10px;
-        font-size: 12px;
-        color: var(--ink-soft);
-        margin-top: 5px;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  // Initialize everything
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      addRatingStyles();
-      initRatingDisplay();
-    });
-  } else {
-    addRatingStyles();
-    initRatingDisplay();
-  }
-
-  // Expose rating functions globally
-  window.ChesstestRating = {
-    updateRatingDisplay,
-    initRatingButton: initResetRatingButton
-  };
-})();
-
-// Settings panel toggle functionality
-(function() {
-  function initSettingsPanel() {
-    const settingsBtn = document.getElementById('settings-btn');
-    const settingsMenu = document.getElementById('settings-menu');
-
-    if (settingsBtn && settingsMenu) {
-      settingsBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        settingsMenu.classList.toggle('show');
-      });
-
-      // Close settings when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!settingsMenu.contains(e.target) && !settingsBtn.contains(e.target)) {
-          settingsMenu.classList.remove('show');
-        }
-      });
-    }
-  }
-
-  // Initialize settings panel
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSettingsPanel);
-  } else {
-    initSettingsPanel();
-  }
-})();
-
-
-// Rating System Logic
-(function() {
-  // Initialize rating display
-  function initRatingDisplay() {
-    updateRatingDisplay();
-    initResetRatingButton();
-  }
-
-  // Update rating display with current stats
-  function updateRatingDisplay() {
-    if (typeof Chess === 'undefined') {
-      setTimeout(updateRatingDisplay, 100);
-      return;
-    }
-
-    const stats = window.chessEngine ? window.chessEngine.getRatingStats() : {
-      current: 1500,
-      gamesPlayed: 0,
-      wins: 0,
-      losses: 0,
-      draws: 0,
-      winRate: 0,
-      bestScore: 1500
-    };
-
-    const currentRating = document.getElementById('current-rating');
-    const ratingLabel = document.querySelector('.rating-label');
-    const ratingGames = document.getElementById('rating-games');
-    const ratingWinRate = document.getElementById('rating-winrate');
-    const ratingBest = document.getElementById('rating-best');
-
-    if (currentRating) {
-      currentRating.textContent = stats.current;
-      currentRating.style.color = window.chessEngine ? 
-        window.chessEngine.getRatingColor(stats.current) : '#1500';
-    }
-
-    if (ratingLabel) {
-      ratingLabel.textContent = window.chessEngine ? 
-        window.chessEngine.getRatingLabel(stats.current) : 'Beginner';
-    }
-
-    if (ratingGames) {
-      ratingGames.textContent = 'Games: ' + stats.gamesPlayed;
-    }
-
-    if (ratingWinRate) {
-      ratingWinRate.textContent = 'Win Rate: ' + stats.winRate + '%';
-    }
-
-    if (ratingBest) {
-      ratingBest.textContent = 'Best: ' + stats.bestScore;
-    }
-  }
-
-  // Initialize reset rating button
-  function initResetRatingButton() {
-    const resetBtn = document.getElementById('reset-rating');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
-        if (confirm('Reset your chess rating to 1500? This cannot be undone.')) {
-          // Clear rating progress
-          localStorage.removeItem('chesstest-rating-progress');
-
-          // Update display
-          updateRatingDisplay();
-
-          // Show notification
-          showNotification('Rating reset to 1500!');
-        }
-      });
-    }
-  }
-
-  // Show notification
-  function showNotification(message) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = 'notification';
-    notification.textContent = message;
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: var(--ring);
-      color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      z-index: 10000;
-      animation: slideIn 0.3s ease;
-    `;
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-      notification.style.animation = 'slideOut 0.3s ease';
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification);
-        }
-      }, 300);
-    }, 2000);
-  }
-
-  // Add CSS for notifications and rating animations
-  function addRatingStyles() {
-    const style = document.createElement('style');
-    style.textContent = `      @keyframes slideIn {
-        from { opacity: 0; transform: translateX(100%); }
-        to { opacity: 1; transform: translateX(0); }
-      }
-
-      @keyframes slideOut {
-        from { opacity: 1; transform: translateX(0); }
-        to { opacity: 0; transform: translateX(100%); }
-      }
-
-      .rating-display {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px;
-        background: var(--bg);
-        border-radius: 8px;
-        margin: 10px 0;
-        border: 2px solid var(--border);
-      }
-
-      .rating-label {
-        font-weight: 600;
-        padding: 4px 8px;
-        border-radius: 4px;
-        background: var(--ring);
-        color: white;
-      }
-
-      .rating-stats {
-        display: flex;
-        gap: 10px;
-        font-size: 12px;
-        color: var(--ink-soft);
-        margin-top: 5px;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  // Initialize everything
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      addRatingStyles();
-      initRatingDisplay();
-    });
-  } else {
-    addRatingStyles();
-    initRatingDisplay();
-  }
-
-  // Expose rating functions globally
-  window.ChesstestRating = {
-    updateRatingDisplay,
-    initRatingButton: initResetRatingButton
-  };
-})();
-
-/* app.js — Chessy: a cute, self-contained chess game */
+/* app.js — Chessy main application */
 "use strict";
 
-/* ---------- piece glyphs ---------- */
-const GLYPH = {
-  K:"\u2654", Q:"\u2655", R:"\u2656", B:"\u2657", N:"\u2658", P:"\u2659",
-  k:"\u265A", q:"\u265B", r:"\u265C", b:"\u265D", n:"\u265E", p:"\u265F"
-};
-const glyph = (p) => (p ? GLYPH[p] : "");
+// Wait for DOM
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("Chessy initializing...");
 
-/* ---------- WebAudio sounds ---------- */
-let audioCtx = null;
-function blip(freq, dur, type = "sine", gain = 0.10) {
-  try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.type = type; o.frequency.value = freq;
-    g.gain.setValueAtTime(gain, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-    o.connect(g); g.connect(audioCtx.destination);
-    o.start(); o.stop(audioCtx.currentTime + dur);
-  } catch (e) { /* no audio */ }
-}
-const sMove    = () => blip(520, 0.08, "sine", 0.09);
-const sCapture = () => { blip(700, 0.07, "triangle", 0.09); blip(460, 0.09, "sine", 0.07); };
-const sWin     = () => [523,659,784].forEach((f,i) => setTimeout(() => blip(f,0.2,"triangle",0.12), i*130));
-const sHint    = () => blip(880, 0.1, "sine", 0.08);
+    // =======================================================================
+    // CONFIGURATION
+    // =======================================================================
 
-/* ---------- DOM ---------- */
-const boardEl     = document.getElementById("board");
-const bannerEl    = document.getElementById("banner");
-const turnEl      = document.getElementById("turn");
-const moveListEl  = document.getElementById("moveList");
-const capWhiteEl  = document.getElementById("capWhite");
-const capBlackEl  = document.getElementById("capBlack");
-const vsAIEl      = document.getElementById("vsAI");
-const levelEl     = document.getElementById("level");
-const promoModal  = document.getElementById("promoModal");
-const promoChoices= document.getElementById("promoChoices");
-const undoBtn     = document.getElementById("undo");
-const newGameBtn  = document.getElementById("newGame");
-const hintBtn     = document.getElementById("hint");
+    const CONFIG = {
+        aiDepth: 3,
+        animDuration: 150
+    };
 
-/* ---------- game state ---------- */
-let state = null;
-let preStates = [];
-let movesPlayed = [];   // {san, cap, ai}
-let selected = null;    // {r,c}
-let legalTargets = null;
-let lastMove = null;    // {fr,fc,tr,tc}
-let pendingPromo = null;
-let thinking = false;
-let hintMove = null;
+    // =======================================================================
+    // GAME STATE
+    // =======================================================================
 
-const squareOf = (r, c) => boardEl.querySelector(`.sq[data-r="${r}"][data-c="${c}"]`);
+    let board = null;
+    let currentPlayer = "w";
+    let selectedSquare = null;
+    let validMoves = [];
+    let gameOver = false;
+    let moveHistory = [];
+    let lastMove = null;
 
-/* ---------- board build ---------- */
-function buildBoard() {
-  boardEl.innerHTML = "";
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      const sq = document.createElement("div");
-      sq.className = "sq " + ((r + c) % 2 === 0 ? "light" : "dark");
-      sq.dataset.r = r; sq.dataset.c = c;
-      if (c === 0) { const lab = document.createElement("span"); lab.className = "coord rank"; lab.textContent = 8 - r; sq.appendChild(lab); }
-      if (r === 7) { const lab = document.createElement("span"); lab.className = "coord file"; lab.textContent = "abcdefgh"[c]; sq.appendChild(lab); }
-      const piece = document.createElement("span");
-      piece.className = "piece";
-      sq.appendChild(piece);
-      sq.addEventListener("click", () => onSquareClick(r, c));
-      boardEl.appendChild(sq);
+    // Rating system
+    let playerRating = 1200;
+    let gamesPlayed = 0;
+    let gamesWon = 0;
+
+    // Puzzle mode
+    let puzzleMode = false;
+    let puzzleMoves = [];
+    let puzzleIndex = 0;
+    let puzzleStartTime = null;
+    let puzzleScore = 0;
+
+    // =======================================================================
+    // THEME MANAGEMENT
+    // =======================================================================
+
+    const THEMES = {
+        default: {
+            name: "Default (Classic)",
+            light: "#f0d9b5",
+            dark: "#b58863",
+            pieces: "default"
+        },
+        dark: {
+            name: "Dark Mode",
+            light: "#4a4a4a",
+            dark: "#2d2d2d",
+            pieces: "default"
+        },
+        pastel: {
+            name: "Pastel",
+            light: "#f5e6d3",
+            dark: "#d4a574",
+            pieces: "default"
+        },
+        "high-contrast": {
+            name: "High Contrast",
+            light: "#ffffff",
+            dark: "#000000",
+            pieces: "default"
+        },
+        wood: {
+            name: "Wood",
+            light: "#deb887",
+            dark: "#8b4513",
+            pieces: "default"
+        },
+        neon: {
+            name: "Neon",
+            light: "#1a1a2e",
+            dark: "#16213e",
+            accent: "#0f3460",
+            pieces: "default"
+        }
+    };
+
+    let currentTheme = "default";
+    let currentPieceStyle = "default";
+
+    // Load saved preferences
+    function loadPreferences() {
+        const savedTheme = localStorage.getItem("chesstest-theme") || "default";
+        const savedStyle = localStorage.getItem("chesstest-piece-style") || "default";
+        const savedRating = localStorage.getItem("chesstest-rating");
+
+        if (savedTheme && THEMES[savedTheme]) {
+            currentTheme = savedTheme;
+        }
+        if (savedStyle) {
+            currentPieceStyle = savedStyle;
+        }
+        if (savedRating) {
+            playerRating = parseInt(savedRating, 10);
+        }
+
+        applyTheme(currentTheme);
+        applyPieceStyle(currentPieceStyle);
+        updateRatingDisplay();
     }
-  }
-}
 
-/* ---------- rendering ---------- */
-function render() {
-// Track last move for visual indicators
-let lastMoveFrom = null;
-let lastMoveTo = null;
-if (m && m.fr && m.tr) {
-  lastMoveFrom = m.fr;
-  lastMoveTo = m.tr;
-  // Set last move squares
-  document.querySelectorAll('.sq').forEach(sq => sq.classList.remove('last-move', 'arrow-move'));
-  const fromSq = document.querySelector(`.sq[data-r="${lastMoveFrom[0]}"][data-c="${lastMoveFrom[1]}"]`);
-  const toSq = document.querySelector(`.sq[data-r="${lastMoveTo[0]}"][data-c="${lastMoveTo[1]}"]`);
-  if (fromSq) fromSq.classList.add('arrow-move');
-  if (toSq) toSq.classList.add('last-move');
-  // Auto-clear after 2 seconds
-  setTimeout(() => {
-    fromSq?.classList.remove('arrow-move');
-    toSq?.classList.remove('last-move');
-  }, 2000);
-}
+    // Apply theme
+    function applyTheme(themeName) {
+        const theme = THEMES[themeName];
+        if (!theme) return;
 
-  const st = getStatus(state);
+        currentTheme = themeName;
+        localStorage.setItem("chesstest-theme", themeName);
 
-  // update squares
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      const sq = squareOf(r, c);
-      sq.className = "sq " + ((r + c) % 2 === 0 ? "light" : "dark");
-      const p = state.board[r][c];
-      const span = sq.querySelector(".piece");
-      span.textContent = glyph(p);
-      span.className = "piece" + (p ? " " + pieceColor(p) : "");
+        document.documentElement.style.setProperty("--light-square", theme.light);
+        document.documentElement.style.setProperty("--dark-square", theme.dark);
+
+        if (theme.accent) {
+            document.documentElement.style.setProperty("--accent", theme.accent);
+        } else {
+            document.documentElement.style.removeProperty("--accent");
+        }
+
+        // Update theme select
+        const select = document.getElementById("theme-select");
+        if (select) select.value = themeName;
     }
-  }
 
-  // selection highlight
-  if (selected) squareOf(selected.r, selected.c).classList.add("selected");
+    // Apply piece style
+    function applyPieceStyle(style) {
+        currentPieceStyle = style;
+        localStorage.setItem("chesstest-piece-style", style);
 
-  // legal targets
-  if (legalTargets) {
-    for (const m of legalTargets) {
-      squareOf(m.tr, m.tc).classList.add(state.board[m.tr][m.tc] ? "move-capture" : "move-dot");
+        const pieceStyleSelect = document.getElementById("piece-style-select");
+        if (pieceStyleSelect) pieceStyleSelect.value = style;
+
+        renderBoard();
     }
-  }
 
-  // last move
-  if (lastMove) {
-    squareOf(lastMove.fr, lastMove.fc).classList.add("last");
-    squareOf(lastMove.tr, lastMove.tc).classList.add("last");
-  }
+    // =======================================================================
+    // PIECE RENDERING
+    // =======================================================================
 
-  // hint
-  if (hintMove) {
-    squareOf(hintMove.fr, hintMove.fc).classList.add("hint-src");
-    squareOf(hintMove.tr, hintMove.tc).classList.add("hint-dst");
-  }
+    // Unicode chess pieces
+    const PIECES_UNICODE = {
+        "K": "♔", "Q": "♕", "R": "♖", "B": "♗", "N": "♘", "P": "♙",
+        "k": "♚", "q": "♛", "r": "♜", "b": "♝", "n": "♞", "p": "♟"
+    };
 
-  // check pulse on king
-  if (st.check) {
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-      const p = state.board[r][c];
-      if (p && pieceColor(p) === state.turn && p.toLowerCase() === "k") {
-        squareOf(r, c).classList.add("check");
-      }
+    // Get piece character
+    function getPieceChar(piece) {
+        if (!piece) return "";
+
+        if (currentPieceStyle === "emoji") {
+            return PIECES_UNICODE[piece] || piece;
+        }
+
+        return PIECES_UNICODE[piece] || piece;
     }
-  }
 
-  // banner & turn label
-  if (st.over) {
-    bannerEl.textContent = st.text;
-    bannerEl.classList.remove("hidden");
-    turnEl.textContent = "Game over";
-    turnEl.classList.remove("check-text");
-  } else {
-    bannerEl.classList.add("hidden");
-    turnEl.textContent = (state.turn === "w" ? "White" : "Black") + " to move";
-    turnEl.classList.toggle("check-text", !!st.check);
-  }
+    // =======================================================================
+    // BOARD RENDERING
+    // =======================================================================
 
-  renderMoves();
-  renderCaptured();
-}
+    function renderBoard() {
+        const boardEl = document.getElementById("board");
+        if (!boardEl || !board) return;
 
-function renderMoves() {
-  moveListEl.innerHTML = "";
-  movesPlayed.forEach((m, i) => {
-    if (i % 2 === 0) {
-      const li = document.createElement("li");
-      li.className = "n";
-      li.textContent = Math.floor(i / 2) + 1 + ".";
-      moveListEl.appendChild(li);
+        boardEl.innerHTML = "";
+
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const square = document.createElement("div");
+                square.className = "square";
+                square.dataset.row = r;
+                square.dataset.col = c;
+
+                // Square colors
+                const isLight = (r + c) % 2 === 0;
+                square.classList.add(isLight ? "light" : "dark");
+
+                // Selected square
+                if (selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c) {
+                    square.classList.add("selected");
+                }
+
+                // Valid moves
+                if (validMoves.some(m => m[0] === r && m[1] === c)) {
+                    square.classList.add("valid-move");
+                    // Check if it's a capture
+                    if (board[r][c]) {
+                        square.classList.add("capture");
+                    }
+                }
+
+                // Last move highlight
+                if (lastMove) {
+                    if ((r === lastMove.from[0] && c === lastMove.from[1]) ||
+                        (r === lastMove.to[0] && c === lastMove.to[1])) {
+                        square.classList.add("last-move");
+                    }
+                }
+
+                // Piece
+                const piece = board[r][c];
+                if (piece) {
+                    const pieceEl = document.createElement("span");
+                    pieceEl.className = "piece";
+                    pieceEl.textContent = getPieceChar(piece);
+                    pieceEl.dataset.piece = piece;
+                    square.appendChild(pieceEl);
+                }
+
+                // Click handler
+                square.addEventListener("click", () => handleSquareClick(r, c));
+
+                boardEl.appendChild(square);
+            }
+        }
     }
-    const li = document.createElement("li");
-    li.className = "m";
-    li.textContent = m.san;
-    moveListEl.appendChild(li);
-  });
-  moveListEl.scrollTop = moveListEl.scrollHeight;
-}
 
-function renderCaptured() {
-  let whiteTook = [], blackTook = [];
-  for (const m of movesPlayed) {
-    if (!m.cap) continue;
-    if (pieceColor(m.cap) === "w") blackTook.push(m.cap);
-    else whiteTook.push(m.cap);
-  }
-  capWhiteEl.innerHTML = whiteTook.map(p => '<span>' + glyph(p) + "</span>").join("");
-  capBlackEl.innerHTML = blackTook.map(p => '<span>' + glyph(p) + "</span>").join("");
-}
+    // =======================================================================
+    // GAME LOGIC
+    // =======================================================================
 
-/* ---------- interactions ---------- */
-function onSquareClick(r, c) {
-  if (thinking || !state || getStatus(state).over) return;
-  if (pendingPromo) return;
-  const vsAI = vsAIEl.checked;
-  if (vsAI && state.turn !== "w") return;
+    function initGame() {
+        board = ChessEngine.initialBoard();
+        currentPlayer = "w";
+        selectedSquare = null;
+        validMoves = [];
+        gameOver = false;
+        moveHistory = [];
+        lastMove = null;
+        puzzleMode = false;
 
-  const p = state.board[r][c];
-  const legal = legalMoves(state);
+        renderBoard();
+        updateStatus();
+        clearBanner();
 
-  // clicking a legal target of selected piece -> move
-  if (selected) {
-    const m = legalTargets && legalTargets.find((mm) => mm.tr === r && mm.tc === c);
-    if (m) {
-      if (m.promo) {
-        pendingPromo = m;
-        selected = null; legalTargets = null;
-        openPromo(state.turn);
-      } else {
-        playMove(m, false);
-      }
-      return;
+        console.log("Game initialized");
     }
-  }
 
-  // select own piece
-  if (p && pieceColor(p) === state.turn) {
-    selected = { r, c };
-    legalTargets = legal.filter((mm) => mm.fr === r && mm.fc === c);
-  } else {
-    selected = null; legalTargets = null;
-  }
-  render();
-}
+    function handleSquareClick(row, col) {
+        if (gameOver) {
+            initGame();
+            return;
+        }
 
-function playMove(m, ai) {
-  const san = moveToSAN(state, m);
-  const captured = state.board[m.tr][m.tc] || (m.ep ? (state.turn === "w" ? "p" : "P") : null);
-  preStates.push(cloneState(state));
-  state = applyMove(state, m)
-// Add smooth animation class for piece movement
-const toSq = document.querySelector(`.sq[data-r="${m.tr[0]}"][data-c="${m.tr[1]}"]`);
-if (toSq) {
-  toSq.style.transition = 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
-  toSq.style.transform = 'scale(1.05)';
-  setTimeout(() => toSq.style.transform = 'scale(1)', 250);
-}
-;
-  movesPlayed.push({ san, cap: captured, ai });
-  lastMove = { fr: m.fr, fc: m.fc, tr: m.tr, tc: m.tc };
-  selected = null; legalTargets = null; hintMove = null; pendingPromo = null;
+        // Puzzle mode - only allow correct moves
+        if (puzzleMode) {
+            handlePuzzleMove(row, col);
+            return;
+        }
 
-  if (captured) sCapture(); else sMove();
+        // Only human plays white
+        if (currentPlayer !== "w") return;
 
-  render();
-  if (getStatus(state).over && getStatus(state).result === "checkmate") sWin();
-  scheduleAI();
-}
+        const piece = board[row][col];
 
-function scheduleAI() {
-  if (getStatus(state).over) return;
-  if (vsAIEl.checked && state.turn !== "w") {
-    thinking = true;
-    turnEl.textContent = "Computer thinking\u2026";
-    setTimeout(() => {
-      const m = chooseAIMove(state, parseInt(levelEl.value, 10) || 2);
-      thinking = false;
-      if (m) playMove(m, true);
-      else render();
-    }, 380);
-  }
-}
+        // If clicking on own piece, select it
+        if (piece && ChessEngine.pieceColor(piece) === "w") {
+            selectedSquare = [row, col];
+            const moves = ChessEngine.legalMoves(board, "w");
+            validMoves = moves
+                .filter(m => m.from[0] === row && m.from[1] === col)
+                .map(m => m.to);
+            renderBoard();
+            return;
+        }
 
-/* ---------- promotion modal ---------- */
-function openPromo(color) {
-  const letters = color === "w" ? ["Q", "R", "B", "N"] : ["q", "r", "b", "n"];
-  promoChoices.innerHTML = "";
-  for (const ch of letters) {
-    const btn = document.createElement("div");
-    btn.className = "promo-choice " + color;
-    btn.textContent = glyph(ch);
-    btn.addEventListener("click", () => {
-      pendingPromo.promo = ch;
-      const m = pendingPromo;
-      pendingPromo = null;
-      closePromo();
-      playMove(m, false);
-    });
-    promoChoices.appendChild(btn);
-  }
-  promoModal.classList.remove("hidden");
-}
-function closePromo() { promoModal.classList.add("hidden"); }
+        // If a square is selected and clicking on valid move
+        if (selectedSquare) {
+            const isValid = validMoves.some(m => m[0] === row && m[1] === col);
 
-/* ---------- controls ---------- */
-function newGame() {
-  state = initialState();
-  preStates = [];
-  movesPlayed = [];
-  selected = null; legalTargets = null; lastMove = null;
-  pendingPromo = null; thinking = false; hintMove = null;
-  closePromo();
-  render();
-}
+            if (isValid) {
+                // Make the move
+                makeHumanMove(selectedSquare[0], selectedSquare[1], row, col);
+            }
+        }
 
-function undoMove() {
-  if (!preStates.length || thinking) return;
-  const vsAI = vsAIEl.checked;
-  let pops = vsAI ? 2 : 1;
-  // Don't pop more than available
-  pops = Math.min(pops, preStates.length);
-  while (pops-- > 0) {
-    state = preStates.pop();
-    movesPlayed.pop();
-  }
-  selected = null; legalTargets = null; lastMove = null;
-  pendingPromo = null; hintMove = null; thinking = false;
-  render();
-}
+        // Clear selection
+        selectedSquare = null;
+        validMoves = [];
+        renderBoard();
+    }
 
-function hint() {
-  if (getStatus(state).over || thinking) return;
-  if (vsAIEl.checked && state.turn !== "w") return;
-  const m = chooseAIMove(state, 2);
-  if (m) { hintMove = { fr: m.fr, fc: m.fc, tr: m.tr, tc: m.tc }; sHint(); render(); }
-}
+    function makeHumanMove(fromR, fromC, toR, toC) {
+        const piece = board[fromR][fromC];
 
-/* ---------- boot ---------- */
-newGameBtn.addEventListener("click", newGame);
-undoBtn.addEventListener("click", undoMove);
-hintBtn.addEventListener("click", hint);
-buildBoard();
-newGame();
+        // Create move object
+        const move = {
+            from: [fromR, fromC],
+            to: [toR, toC],
+            piece: piece,
+            captured: board[toR][toC]
+        };
+
+        // Make move
+        ChessEngine.makeMove(board, move);
+        lastMove = move;
+        moveHistory.push(move);
+
+        // Switch player
+        currentPlayer = "b";
+        selectedSquare = null;
+        validMoves = [];
+
+        renderBoard();
+        updateStatus();
+
+        // AI move
+        setTimeout(makeAIMove, 500);
+    }
+
+    function makeAIMove() {
+        if (gameOver || currentPlayer !== "b") return;
+
+        console.log("AI thinking...");
+
+        const move = ChessAI.getBestMove(board, CONFIG.aiDepth, ChessEngine);
+
+        if (!move) {
+            // No legal moves - game over
+            handleGameOver();
+            return;
+        }
+
+        // Make move
+        ChessEngine.makeMove(board, move);
+        lastMove = move;
+        moveHistory.push(move);
+
+        // Switch player
+        currentPlayer = "w";
+
+        renderBoard();
+        updateStatus();
+
+        // Check game state
+        const state = ChessEngine.gameState(board, "w");
+        if (state === "checkmate" || state === "stalemate") {
+            handleGameOver();
+        }
+    }
+
+    function handleGameOver() {
+        const state = ChessEngine.gameState(board, "w");
+
+        gameOver = true;
+
+        if (state === "checkmate") {
+            // White is in checkmate, black wins
+            showBanner("Checkmate! Black wins!", "loss");
+            updateRating(-20);
+        } else if (state === "stalemate") {
+            showBanner("Stalemate! Draw.", "draw");
+        } else {
+            const blackState = ChessEngine.gameState(board, "b");
+            if (blackState === "checkmate") {
+                showBanner("Checkmate! You win!", "win");
+                updateRating(25);
+            }
+        }
+    }
+
+    function updateStatus() {
+        const statusEl = document.getElementById("status");
+        if (!statusEl) return;
+
+        let status = currentPlayer === "w" ? "Your turn" : "AI thinking...";
+
+        if (gameOver) {
+            status = "Game over";
+        }
+
+        statusEl.textContent = status;
+    }
+
+    function showBanner(message, type) {
+        const banner = document.getElementById("banner");
+        if (!banner) return;
+
+        banner.textContent = message;
+        banner.className = "banner " + type;
+        banner.classList.remove("hidden");
+
+        gamesPlayed++;
+        localStorage.setItem("chesstest-games-played", gamesPlayed);
+    }
+
+    function clearBanner() {
+        const banner = document.getElementById("banner");
+        if (banner) {
+            banner.classList.add("hidden");
+        }
+    }
+
+    // =======================================================================
+    // RATING SYSTEM
+    // =======================================================================
+
+    function updateRating(delta) {
+        playerRating += delta;
+        localStorage.setItem("chesstest-rating", playerRating);
+
+        if (delta > 0) {
+            gamesWon++;
+        }
+
+        localStorage.setItem("chesstest-games-won", gamesWon);
+        updateRatingDisplay();
+    }
+
+    function updateRatingDisplay() {
+        const ratingEl = document.getElementById("rating");
+        if (ratingEl) {
+            ratingEl.textContent = playerRating;
+        }
+
+        const gamesEl = document.getElementById("games-played");
+        if (gamesEl) {
+            gamesEl.textContent = gamesPlayed;
+        }
+    }
+
+    // =======================================================================
+    // PUZZLE MODE
+    // =======================================================================
+
+    const PUZZLES = [
+        { moves: ["e2e4", "e7e5", "d1h5", "b8c6", "h5f7"] }, // Scholar's mate
+        { moves: ["d2d4", "d7d5", "c1f4", "c8f5", "f4g3"] }, // Fool's Mate setup
+        { moves: ["e2e3", "e7e5", "d1h5", "a7a6", "h5a5"] }, // Simple tactics
+    ];
+
+    function startPuzzle(puzzleIndex) {
+        const puzzle = PUZZLES[puzzleIndex % PUZZLES.length];
+
+        board = ChessEngine.initialBoard();
+        currentPlayer = "w";
+        selectedSquare = null;
+        validMoves = [];
+        gameOver = false;
+        lastMove = null;
+        puzzleMode = true;
+        puzzleMoves = puzzle.moves;
+        puzzleIndex = 0;
+        puzzleStartTime = Date.now();
+        puzzleScore = 0;
+
+        renderBoard();
+        updateStatus();
+
+        console.log("Puzzle started!");
+    }
+
+    function handlePuzzleMove(row, col) {
+        if (!selectedSquare) {
+            // Select a piece
+            const piece = board[row][col];
+            if (piece && ChessEngine.pieceColor(piece) === currentPlayer) {
+                selectedSquare = [row, col];
+                const moves = ChessEngine.legalMoves(board, currentPlayer);
+                validMoves = moves
+                    .filter(m => m.from[0] === row && m.from[1] === col)
+                    .map(m => m.to);
+                renderBoard();
+            }
+            return;
+        }
+
+        // Try to make the expected move
+        const expectedMove = puzzleMoves[puzzleIndex];
+        const [fromR, fromC] = ChessEngine.toRC(expectedMove.substring(0, 2));
+        const [toR, toC] = ChessEngine.toRC(expectedMove.substring(2, 4));
+
+        // Check if this is the expected move
+        if (row === toR && col === toC) {
+            const move = {
+                from: [fromR, fromC],
+                to: [toR, toC],
+                piece: board[fromR][fromC],
+                captured: board[toR][toC]
+            };
+
+            ChessEngine.makeMove(board, move);
+            lastMove = move;
+            puzzleIndex++;
+            selectedSquare = null;
+            validMoves = [];
+
+            renderBoard();
+
+            if (puzzleIndex >= puzzleMoves.length) {
+                // Puzzle solved!
+                const timeTaken = (Date.now() - puzzleStartTime) / 1000;
+                puzzleScore = Math.max(100 - Math.floor(timeTaken), 10);
+                showBanner("Puzzle solved! +" + puzzleScore + " points", "win");
+            } else {
+                // AI responds
+                currentPlayer = "b";
+                setTimeout(makeAIMove, 300);
+            }
+        } else {
+            // Wrong move
+            showBanner("Wrong move! Try again.", "loss");
+            selectedSquare = null;
+            validMoves = [];
+            renderBoard();
+        }
+    }
+
+    // =======================================================================
+    // SETTINGS PANEL
+    // =======================================================================
+
+    function setupSettings() {
+        // Theme selector
+        const themeSelect = document.getElementById("theme-select");
+        if (themeSelect) {
+            // Populate options
+            Object.keys(THEMES).forEach(themeKey => {
+                const option = document.createElement("option");
+                option.value = themeKey;
+                option.textContent = THEMES[themeKey].name;
+                themeSelect.appendChild(option);
+            });
+
+            themeSelect.addEventListener("change", (e) => {
+                applyTheme(e.target.value);
+            });
+        }
+
+        // Piece style selector
+        const styleSelect = document.getElementById("piece-style-select");
+        if (styleSelect) {
+            styleSelect.addEventListener("change", (e) => {
+                applyPieceStyle(e.target.value);
+            });
+        }
+
+        // New game button
+        const newGameBtn = document.getElementById("new-game");
+        if (newGameBtn) {
+            newGameBtn.addEventListener("click", initGame);
+        }
+
+        // Puzzle mode button
+        const puzzleBtn = document.getElementById("puzzle-mode");
+        if (puzzleBtn) {
+            puzzleBtn.addEventListener("click", () => {
+                startPuzzle(Math.floor(Math.random() * PUZZLES.length));
+            });
+        }
+    }
+
+    // =======================================================================
+    // INITIALIZATION
+    // =======================================================================
+
+    function init() {
+        console.log("Chessy starting...");
+
+        loadPreferences();
+        setupSettings();
+        initGame();
+
+        console.log("Chessy ready!");
+    }
+
+    // Start when DOM is ready
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+});

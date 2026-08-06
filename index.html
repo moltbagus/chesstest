@@ -1,102 +1,67 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chessy — a cute chess game</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chessy — a cute chess game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div class="page">
+    <div class="page">
+        <header class="top">
+            <h1 class="logo">&#9823; Chessy <span class="heart">&#10084;</span></h1>
+            <p class="tagline">a tiny, cute chess game</p>
+        </header>
 
-  <header class="top">
-    <h1 class="logo">&#9823; Chessy <span class="heart">&#10084;</span></h1>
-    <p class="tagline">a tiny, cute chess game — no ads, no engine downloads, just you &amp; the board</p>
-  </header>
+        <main class="layout">
+            <section class="board-wrap">
+                <div id="board" class="board"></div>
+                <div id="banner" class="banner hidden"></div>
+            </section>
 
-  <main class="layout">
-    <section class="board-wrap">
-      <div id="board" class="board"></div>
-      <div id="banner" class="banner hidden"></div>
-    </section>
+            <aside class="panel">
+                <div class="settings-panels">
+                    <div>
+                        <h3>Settings</h3>
+                        <label for="theme-select">Board Theme</label>
+                        <select id="theme-select">
+                            <option value="default">Default (Classic)</option>
+                            <option value="dark">Dark Mode</option>
+                            <option value="pastel">Pastel</option>
+                            <option value="high-contrast">High Contrast</option>
+                            <option value="wood">Wood</option>
+                            <option value="neon">Neon</option>
+                        </select>
+                    </div>
 
-    <aside class="panel">
-      
-<!-- Theme Selector -->
-<div class="settings-panel">
-  <button id="settings-btn" class="settings-toggle" aria-label="Settings">⚙️</button>
-  <div id="settings-menu" class="settings-menu">
-    <h3>Settings</h3>
+                    <div>
+                        <label for="piece-style-select">Piece Style</label>
+                        <select id="piece-style-select">
+                            <option value="default">Default</option>
+                            <option value="emoji">Emoji</option>
+                        </select>
+                    </div>
 
-    <div class="setting-group">
-      <label for="theme-select">Board Theme</label>
-      <select id="theme-select" class="setting-control">
-        <option value="default">Default (Classic)</option>
-        <option value="dark">Dark Mode</option>
-        <option value="pastel">Pastel</option>
-        <option value="high-contrast">High Contrast</option>
-        <option value="wood">Wood</option>
-        <option value="neon">Neon</option>
-      </select>
+                    <div>
+                        <button id="new-game" class="btn btn-primary">New Game</button>
+                        <button id="puzzle-mode" class="btn btn-primary">Puzzle Mode</button>
+                    </div>
+
+                    <div class="status-bar">
+                        <span id="status">Your turn</span>
+                        <span>Rating: <span id="rating">1200</span></span>
+                        <span>Games: <span id="games-played">0</span></span>
+                    </div>
+                </div>
+            </aside>
+        </main>
     </div>
 
-    <div class="setting-group">
-      <label for="piece-theme">Piece Style</label>
-      <select id="piece-theme" class="setting-control">
-        <option value="default">Default</option>
-        <option value="emoji">Emoji</option>
-        <option value="pixel">Pixel Art</option>
-      </select>
-    </div>
-
-    <div class="setting-group">
-      <button id="reset-settings" class="setting-btn">Reset to Default</button>
-    </div>
-  </div>
-</div>
-<div class="controls">
-        <button id="newGame" class="btn">&#8635; New game</button>
-        <button id="undo" class="btn">&#8617; Undo</button>
-        <button id="hint" class="btn">&#128161; Hint</button>
-        <label class="pill"><input type="checkbox" id="vsAI" checked> Play vs computer</label>
-        <label class="pill">Level
-          <select id="level">
-            <option value="1">Easy</option>
-            <option value="2" selected>Medium</option>
-            <option value="3">Hard</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="captured">
-        <div class="cap-row"><span class="cap-label">You took</span><span id="capWhite" class="caps"></span></div>
-        <div class="cap-row"><span class="cap-label">Bot took</span><span id="capBlack" class="caps"></span></div>
-      </div>
-
-      <div id="turn" class="turn">White to move</div>
-
-      <div class="moves-wrap">
-        <div class="moves-title">Moves</div>
-        <ol id="moveList" class="moves"></ol>
-      </div>
-    </aside>
-  </main>
-
-  <footer class="foot">Made by <a href="https://x.com/sirshibaninja" target="_blank" rel="noopener">@sirshibaninja</a> &nbsp;·&nbsp; Made with &#10084; and a little &#9822; &nbsp;·&nbsp; move list in algebraic notation</footer>
-</div>
-
-<div id="promoModal" class="modal hidden">
-  <div class="modal-card">
-    <p class="promo-title">Promote to&#8230;</p>
-    <div id="promoChoices" class="promo-choices"></div>
-  </div>
-</div>
-
-<script src="js/chess.js"></script>
-<script src="js/ai.js"></script>
-<script src="js/app.js"></script>
+    <script src="js/chess.js"></script>
+    <script src="js/ai.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>

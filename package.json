@@ -26,5 +26,8 @@
     ">0.25%",
     "not dead",
     "not op_mini all"
-  ]
+  ],
+  "dependencies": {
+    "puppeteer": "^25.5.0"
+  }
 }

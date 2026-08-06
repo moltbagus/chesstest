@@ -4,6 +4,18 @@ A simple, cute chess game — vanilla JavaScript chess engine with AI, pastel th
 
 ## Features
 
+### 📊 Rating System
+
+Track your chess improvement with a live Elo rating system:
+- **Start at 1500** - Standard chess rating
+- **Earn points** - Win games, puzzles, and challenges
+- **See progress** - View your rating history and win rate
+- **Skill levels** - Color-coded rating bars (Beginner → Expert)
+- **Competitive play** - Compare ratings with friends
+
+Your rating reflects your skill and keeps you motivated to improve!
+
+
 - **Full chess rules**: castling, en passant, promotion, check/checkmate/stalemate, 50-move rule, insufficient material draws
 - **Cute pastel UI**: warm cream and coral board, soft pink highlights, animated move dots
 - **Play vs Computer**: three difficulty levels (Easy/Medium/Hard) with a minimax AI + alpha-beta pruning

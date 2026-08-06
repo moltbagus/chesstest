@@ -24,7 +24,40 @@
     </section>
 
     <aside class="panel">
-      <div class="controls">
+      
+<!-- Theme Selector -->
+<div class="settings-panel">
+  <button id="settings-btn" class="settings-toggle" aria-label="Settings">⚙️</button>
+  <div id="settings-menu" class="settings-menu">
+    <h3>Settings</h3>
+
+    <div class="setting-group">
+      <label for="theme-select">Board Theme</label>
+      <select id="theme-select" class="setting-control">
+        <option value="default">Default (Classic)</option>
+        <option value="dark">Dark Mode</option>
+        <option value="pastel">Pastel</option>
+        <option value="high-contrast">High Contrast</option>
+        <option value="wood">Wood</option>
+        <option value="neon">Neon</option>
+      </select>
+    </div>
+
+    <div class="setting-group">
+      <label for="piece-theme">Piece Style</label>
+      <select id="piece-theme" class="setting-control">
+        <option value="default">Default</option>
+        <option value="emoji">Emoji</option>
+        <option value="pixel">Pixel Art</option>
+      </select>
+    </div>
+
+    <div class="setting-group">
+      <button id="reset-settings" class="setting-btn">Reset to Default</button>
+    </div>
+  </div>
+</div>
+<div class="controls">
         <button id="newGame" class="btn">&#8635; New game</button>
         <button id="undo" class="btn">&#8617; Undo</button>
         <button id="hint" class="btn">&#128161; Hint</button>

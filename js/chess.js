@@ -316,3 +316,103 @@ function initialState() {
     fullmove: 1,
   };
 }
+
+
+
+// ===== ELO RATING SYSTEM =====
+Chess.prototype.getElo = function() {
+  const key = 'chess_' + this.turn + '_' + this.history().length;
+  const progress = JSON.parse(localStorage.getItem('chesstest-rating-progress') || '{}');
+  return (progress[key] && progress[key].rating) || 1500;
+};
+
+Chess.prototype.updateElo = function(result, opponentRating) {
+  const currentRating = this.getElo();
+  const expected = 1 / (1 + Math.pow(10, (opponentRating - currentRating) / 400));
+  const K = 32; // Standard K-factor for chess
+  const newRating = currentRating + K * (result - expected);
+
+  // Save rating update
+  const key = 'chess_' + this.turn + '_' + this.history().length;
+  const progress = JSON.parse(localStorage.getItem('chesstest-rating-progress') || '{}');
+
+  if (!progress[key]) {
+    progress[key] = {
+      rating: currentRating,
+      opponentRating: opponentRating,
+      result: result,
+      timestamp: Date.now(),
+      moves: this.history().length
+    };
+    localStorage.setItem('chesstest-rating-progress', JSON.stringify(progress));
+  }
+
+  return Math.round(newRating);
+};
+
+Chess.prototype.getRatingStats = function() {
+  const progress = JSON.parse(localStorage.getItem('chesstest-rating-progress') || '{}');
+  const userGames = Object.values(progress).filter(p => p.moves > 0);
+
+  if (userGames.length === 0) {
+    return {
+      current: 1500,
+      gamesPlayed: 0,
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      winRate: 0,
+      bestScore: 0
+    };
+  }
+
+  const ratings = userGames.map(p => p.rating);
+  const current = ratings[ratings.length - 1];
+  const wins = userGames.filter(p => p.result === 1).length;
+  const losses = userGames.filter(p => p.result === 0).length;
+  const draws = userGames.filter(p => p.result === 0.5).length;
+
+  return {
+    current: Math.round(current),
+    gamesPlayed: userGames.length,
+    wins: wins,
+    losses: losses,
+    draws: draws,
+    winRate: Math.round((wins / userGames.length) * 100),
+    bestScore: Math.max(...ratings)
+  };
+};
+
+Chess.prototype.recordGameResult = function(result, opponentRating) {
+  this.updateElo(result, opponentRating);
+
+  // Also record in progress for backward compatibility
+  const progress = JSON.parse(localStorage.getItem('chesstest-rating-progress') || '{}');
+  const key = 'game_' + Date.now();
+  progress[key] = {
+    result: result,
+    opponentRating: opponentRating,
+    myRating: this.getElo(),
+    timestamp: Date.now(),
+    moves: this.history().length
+  };
+  localStorage.setItem('chesstest-rating-progress', JSON.stringify(progress));
+};
+
+Chess.prototype.getRatingColor = function(rating) {
+  if (rating < 1200) return '#ff4444';
+  if (rating < 1400) return '#ff8800';
+  if (rating < 1600) return '#ffcc00';
+  if (rating < 1800) return '#88cc00';
+  if (rating < 2000) return '#44aa88';
+  return '#4466cc';
+};
+
+Chess.prototype.getRatingLabel = function(rating) {
+  if (rating < 1200) return 'Beginner';
+  if (rating < 1400) return 'Improving';
+  if (rating < 1600) return 'Good';
+  if (rating < 1800) return 'Strong';
+  if (rating < 2000) return 'Very Strong';
+  return 'Expert';
+};

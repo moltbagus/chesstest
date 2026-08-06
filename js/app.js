@@ -1,3 +1,437 @@
+
+// Theme Management
+(function() {
+  const themes = ['default', 'dark', 'pastel', 'high-contrast', 'wood', 'neon'];
+  const defaultTheme = 'default';
+
+  // Load saved theme from localStorage
+  function loadTheme() {
+    const savedTheme = localStorage.getItem('chesstest-theme') || defaultTheme;
+    applyTheme(savedTheme);
+    // Update the select dropdown
+    const themeSelect = document.getElementById('theme-select');
+    if (themeSelect) themeSelect.value = savedTheme;
+  }
+
+  // Apply theme to document
+  function applyTheme(theme) {
+    // Remove all theme classes
+    document.documentElement.classList.remove(...themes.map(t => 'theme-' + t));
+
+    if (theme !== 'default') {
+      document.documentElement.classList.add('theme-' + theme);
+    }
+
+    // Save to localStorage
+    localStorage.setItem('chesstest-theme', theme);
+
+    // Re-render board if it exists
+    if (typeof render === 'function') {
+      render();
+    }
+  }
+
+  // Theme selector event listener
+  function initThemeSelector() {
+    const themeSelect = document.getElementById('theme-select');
+    const resetBtn = document.getElementById('reset-settings');
+
+    if (themeSelect) {
+      themeSelect.addEventListener('change', (e) => {
+        applyTheme(e.target.value);
+      });
+    }
+
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        applyTheme(defaultTheme);
+        if (themeSelect) themeSelect.value = defaultTheme;
+      });
+    }
+  }
+
+  // Initialize theme selector when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      loadTheme();
+      initThemeSelector();
+    });
+  } else {
+    loadTheme();
+    initThemeSelector();
+  }
+
+  // Expose theme functions globally
+  window.ChesstestThemes = {
+    applyTheme,
+    loadTheme,
+    themes
+  };
+})();
+
+
+// Rating System Logic
+(function() {
+  // Initialize rating display
+  function initRatingDisplay() {
+    updateRatingDisplay();
+    initResetRatingButton();
+  }
+
+  // Update rating display with current stats
+  function updateRatingDisplay() {
+    if (typeof Chess === 'undefined') {
+      setTimeout(updateRatingDisplay, 100);
+      return;
+    }
+
+    const stats = window.chessEngine ? window.chessEngine.getRatingStats() : {
+      current: 1500,
+      gamesPlayed: 0,
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      winRate: 0,
+      bestScore: 1500
+    };
+
+    const currentRating = document.getElementById('current-rating');
+    const ratingLabel = document.querySelector('.rating-label');
+    const ratingGames = document.getElementById('rating-games');
+    const ratingWinRate = document.getElementById('rating-winrate');
+    const ratingBest = document.getElementById('rating-best');
+
+    if (currentRating) {
+      currentRating.textContent = stats.current;
+      currentRating.style.color = window.chessEngine ? 
+        window.chessEngine.getRatingColor(stats.current) : '#1500';
+    }
+
+    if (ratingLabel) {
+      ratingLabel.textContent = window.chessEngine ? 
+        window.chessEngine.getRatingLabel(stats.current) : 'Beginner';
+    }
+
+    if (ratingGames) {
+      ratingGames.textContent = 'Games: ' + stats.gamesPlayed;
+    }
+
+    if (ratingWinRate) {
+      ratingWinRate.textContent = 'Win Rate: ' + stats.winRate + '%';
+    }
+
+    if (ratingBest) {
+      ratingBest.textContent = 'Best: ' + stats.bestScore;
+    }
+  }
+
+  // Initialize reset rating button
+  function initResetRatingButton() {
+    const resetBtn = document.getElementById('reset-rating');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        if (confirm('Reset your chess rating to 1500? This cannot be undone.')) {
+          // Clear rating progress
+          localStorage.removeItem('chesstest-rating-progress');
+
+          // Update display
+          updateRatingDisplay();
+
+          // Show notification
+          showNotification('Rating reset to 1500!');
+        }
+      });
+    }
+  }
+
+  // Show notification
+  function showNotification(message) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--ring);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.style.animation = 'slideOut 0.3s ease';
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 300);
+    }, 2000);
+  }
+
+  // Add CSS for notifications and rating animations
+  function addRatingStyles() {
+    const style = document.createElement('style');
+    style.textContent = `      @keyframes slideIn {
+        from { opacity: 0; transform: translateX(100%); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+
+      @keyframes slideOut {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(100%); }
+      }
+
+      .rating-display {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        background: var(--bg);
+        border-radius: 8px;
+        margin: 10px 0;
+        border: 2px solid var(--border);
+      }
+
+      .rating-label {
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: var(--ring);
+        color: white;
+      }
+
+      .rating-stats {
+        display: flex;
+        gap: 10px;
+        font-size: 12px;
+        color: var(--ink-soft);
+        margin-top: 5px;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Initialize everything
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      addRatingStyles();
+      initRatingDisplay();
+    });
+  } else {
+    addRatingStyles();
+    initRatingDisplay();
+  }
+
+  // Expose rating functions globally
+  window.ChesstestRating = {
+    updateRatingDisplay,
+    initRatingButton: initResetRatingButton
+  };
+})();
+
+// Settings panel toggle functionality
+(function() {
+  function initSettingsPanel() {
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsMenu = document.getElementById('settings-menu');
+
+    if (settingsBtn && settingsMenu) {
+      settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        settingsMenu.classList.toggle('show');
+      });
+
+      // Close settings when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!settingsMenu.contains(e.target) && !settingsBtn.contains(e.target)) {
+          settingsMenu.classList.remove('show');
+        }
+      });
+    }
+  }
+
+  // Initialize settings panel
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSettingsPanel);
+  } else {
+    initSettingsPanel();
+  }
+})();
+
+
+// Rating System Logic
+(function() {
+  // Initialize rating display
+  function initRatingDisplay() {
+    updateRatingDisplay();
+    initResetRatingButton();
+  }
+
+  // Update rating display with current stats
+  function updateRatingDisplay() {
+    if (typeof Chess === 'undefined') {
+      setTimeout(updateRatingDisplay, 100);
+      return;
+    }
+
+    const stats = window.chessEngine ? window.chessEngine.getRatingStats() : {
+      current: 1500,
+      gamesPlayed: 0,
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      winRate: 0,
+      bestScore: 1500
+    };
+
+    const currentRating = document.getElementById('current-rating');
+    const ratingLabel = document.querySelector('.rating-label');
+    const ratingGames = document.getElementById('rating-games');
+    const ratingWinRate = document.getElementById('rating-winrate');
+    const ratingBest = document.getElementById('rating-best');
+
+    if (currentRating) {
+      currentRating.textContent = stats.current;
+      currentRating.style.color = window.chessEngine ? 
+        window.chessEngine.getRatingColor(stats.current) : '#1500';
+    }
+
+    if (ratingLabel) {
+      ratingLabel.textContent = window.chessEngine ? 
+        window.chessEngine.getRatingLabel(stats.current) : 'Beginner';
+    }
+
+    if (ratingGames) {
+      ratingGames.textContent = 'Games: ' + stats.gamesPlayed;
+    }
+
+    if (ratingWinRate) {
+      ratingWinRate.textContent = 'Win Rate: ' + stats.winRate + '%';
+    }
+
+    if (ratingBest) {
+      ratingBest.textContent = 'Best: ' + stats.bestScore;
+    }
+  }
+
+  // Initialize reset rating button
+  function initResetRatingButton() {
+    const resetBtn = document.getElementById('reset-rating');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        if (confirm('Reset your chess rating to 1500? This cannot be undone.')) {
+          // Clear rating progress
+          localStorage.removeItem('chesstest-rating-progress');
+
+          // Update display
+          updateRatingDisplay();
+
+          // Show notification
+          showNotification('Rating reset to 1500!');
+        }
+      });
+    }
+  }
+
+  // Show notification
+  function showNotification(message) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--ring);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.style.animation = 'slideOut 0.3s ease';
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 300);
+    }, 2000);
+  }
+
+  // Add CSS for notifications and rating animations
+  function addRatingStyles() {
+    const style = document.createElement('style');
+    style.textContent = `      @keyframes slideIn {
+        from { opacity: 0; transform: translateX(100%); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+
+      @keyframes slideOut {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(100%); }
+      }
+
+      .rating-display {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        background: var(--bg);
+        border-radius: 8px;
+        margin: 10px 0;
+        border: 2px solid var(--border);
+      }
+
+      .rating-label {
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: var(--ring);
+        color: white;
+      }
+
+      .rating-stats {
+        display: flex;
+        gap: 10px;
+        font-size: 12px;
+        color: var(--ink-soft);
+        margin-top: 5px;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Initialize everything
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      addRatingStyles();
+      initRatingDisplay();
+    });
+  } else {
+    addRatingStyles();
+    initRatingDisplay();
+  }
+
+  // Expose rating functions globally
+  window.ChesstestRating = {
+    updateRatingDisplay,
+    initRatingButton: initResetRatingButton
+  };
+})();
+
 /* app.js — Chessy: a cute, self-contained chess game */
 "use strict";
 
@@ -76,6 +510,25 @@ function buildBoard() {
 
 /* ---------- rendering ---------- */
 function render() {
+// Track last move for visual indicators
+let lastMoveFrom = null;
+let lastMoveTo = null;
+if (m && m.fr && m.tr) {
+  lastMoveFrom = m.fr;
+  lastMoveTo = m.tr;
+  // Set last move squares
+  document.querySelectorAll('.sq').forEach(sq => sq.classList.remove('last-move', 'arrow-move'));
+  const fromSq = document.querySelector(`.sq[data-r="${lastMoveFrom[0]}"][data-c="${lastMoveFrom[1]}"]`);
+  const toSq = document.querySelector(`.sq[data-r="${lastMoveTo[0]}"][data-c="${lastMoveTo[1]}"]`);
+  if (fromSq) fromSq.classList.add('arrow-move');
+  if (toSq) toSq.classList.add('last-move');
+  // Auto-clear after 2 seconds
+  setTimeout(() => {
+    fromSq?.classList.remove('arrow-move');
+    toSq?.classList.remove('last-move');
+  }, 2000);
+}
+
   const st = getStatus(state);
 
   // update squares
@@ -205,7 +658,15 @@ function playMove(m, ai) {
   const san = moveToSAN(state, m);
   const captured = state.board[m.tr][m.tc] || (m.ep ? (state.turn === "w" ? "p" : "P") : null);
   preStates.push(cloneState(state));
-  state = applyMove(state, m);
+  state = applyMove(state, m)
+// Add smooth animation class for piece movement
+const toSq = document.querySelector(`.sq[data-r="${m.tr[0]}"][data-c="${m.tr[1]}"]`);
+if (toSq) {
+  toSq.style.transition = 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
+  toSq.style.transform = 'scale(1.05)';
+  setTimeout(() => toSq.style.transform = 'scale(1)', 250);
+}
+;
   movesPlayed.push({ san, cap: captured, ai });
   lastMove = { fr: m.fr, fc: m.fc, tr: m.tr, tc: m.tc };
   selected = null; legalTargets = null; hintMove = null; pendingPromo = null;

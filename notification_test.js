@@ -13,41 +13,48 @@ const puppeteer = require('puppeteer');
         catch { res.writeHead(404); res.end('Not found'); }
     });
 
-    await new Promise(r => server.listen(3462, r));
+    await new Promise(r => server.listen(3459, r));
 
     const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
     const page = await browser.newPage();
-
-    let errors = [];
-    page.on('pageerror', err => errors.push(err.message));
-
-    await page.goto('http://localhost:3462/', { waitUntil: 'networkidle2', timeout: 15000 });
+    await page.goto('http://localhost:3459/', { waitUntil: 'networkidle2', timeout: 15000 });
     await new Promise(r => setTimeout(r, 2000));
 
-    console.log('Page errors:', errors.length > 0 ? errors : 'None');
-
-    // Click New Game
-    await page.click('#new-game');
-    await new Promise(r => setTimeout(r, 500));
-
+    // Check for notification
+    console.log('Checking for notification...');
     const notif = await page.evaluate(() => {
-        return document.querySelector('.notification') ? document.querySelector('.notification').textContent : 'No notification';
+        const n = document.querySelector('.notification');
+        return n ? n.textContent : null;
     });
     console.log('Notification:', notif);
 
+    // Click New Game
+    console.log('\nClicking New Game...');
+    await page.click('#new-game');
+    await new Promise(r => setTimeout(r, 500));
+
+    const notifAfter = await page.evaluate(() => {
+        const n = document.querySelector('.notification');
+        return n ? n.textContent : null;
+    });
+    console.log('Notification after click:', notifAfter);
+
     // Click Hint
+    console.log('\nClicking Hint...');
     await page.click('#hint');
     await new Promise(r => setTimeout(r, 500));
 
     const hintNotif = await page.evaluate(() => {
-        return document.querySelector('.notification') ? document.querySelector('.notification').textContent : 'No notification';
+        const n = document.querySelector('.notification');
+        return n ? n.textContent : null;
     });
     console.log('Hint notification:', hintNotif);
 
-    await page.screenshot({ path: '/Users/colbert1/chesstest/notification_test3.png' });
+    await page.screenshot({ path: '/Users/colbert1/chesstest/notification_test.png' });
+    console.log('\nScreenshot saved');
 
     await browser.close();
     server.close();
 
-    console.log('\n' + (notif !== 'No notification' ? '✅ SUCCESS!' : '❌ Still broken'));
+    console.log('\n' + (notifAfter ? '✅ Notifications working!' : '❌ No notification'));
 })();

@@ -2,10 +2,7 @@
 (function() {
     'use strict';
 
-    // =======================================================================
     // STATE
-    // =======================================================================
-
     var board = null;
     var currentPlayer = 'w';
     var selectedSquare = null;
@@ -29,72 +26,50 @@
         neon: { name: 'Neon', light: '#1a1a2e', dark: '#16213e', accent: '#0f3460' }
     };
 
-    // Pieces unicode
+    // Pieces unicode (must keep these!)
     var PIECES = {
-        'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
-        'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+        'K': '\u2654', 'Q': '\u2655', 'R': '\u2656', 'B': '\u2657', 'N': '\u2658', 'P': '\u2659',
+        'k': '\u265A', 'q': '\u265B', 'r': '\u265C', 'b': '\u265D', 'n': '\u265E', 'p': '\u265F'
     };
 
-    // =======================================================================
     // INITIALIZE
-    // =======================================================================
-
     function init() {
         console.log('Chessy initializing...');
-
         loadPreferences();
         setupThemeSelector();
         setupPieceStyleSelector();
         setupButtons();
-
         initGame();
-
         console.log('Chessy ready!');
     }
 
     function loadPreferences() {
         var savedTheme = localStorage.getItem('chesstest-theme');
-        if (savedTheme && themes[savedTheme]) {
-            currentTheme = savedTheme;
-        }
-
+        if (savedTheme && themes[savedTheme]) currentTheme = savedTheme;
         var savedRating = localStorage.getItem('chesstest-rating');
         if (savedRating) playerRating = parseInt(savedRating, 10);
-
         var savedGames = localStorage.getItem('chesstest-games-played');
         if (savedGames) gamesPlayed = parseInt(savedGames, 10);
-
         applyTheme(currentTheme);
     }
 
-    // =======================================================================
     // GAME
-    // =======================================================================
-
     function initGame() {
-        console.log('Starting new game...');
-
         board = ChessEngine.initialBoard();
         currentPlayer = 'w';
         selectedSquare = null;
         validMoves = [];
         gameOver = false;
         hintMove = null;
-
         renderBoard();
         updateStatus();
         hideBanner();
-
-        console.log('Game started!');
+        showNotification('New game started! Your turn.', 'info');
     }
 
     function renderBoard() {
         var boardEl = document.getElementById('board');
-        if (!boardEl) {
-            console.error('Board element not found!');
-            return;
-        }
-
+        if (!boardEl) return;
         boardEl.innerHTML = '';
 
         for (var r = 0; r < 8; r++) {
@@ -103,39 +78,25 @@
                 square.className = 'square';
                 square.dataset.row = r;
                 square.dataset.col = c;
-
-                if ((r + c) % 2 === 0) {
-                    square.classList.add('light');
-                } else {
-                    square.classList.add('dark');
-                }
+                square.classList.add((r + c) % 2 === 0 ? 'light' : 'dark');
 
                 // Hint highlighting
                 if (hintMove) {
-                    if (r === hintMove.from[0] && c === hintMove.from[1]) {
-                        square.classList.add('hint-from');
-                    }
-                    if (r === hintMove.to[0] && c === hintMove.to[1]) {
-                        square.classList.add('hint');
-                    }
+                    if (r === hintMove.from[0] && c === hintMove.from[1]) square.classList.add('hint-from');
+                    if (r === hintMove.to[0] && c === hintMove.to[1]) square.classList.add('hint');
                 }
 
-                // Selected
                 if (selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c) {
                     square.classList.add('selected');
                 }
 
-                // Valid moves
                 for (var i = 0; i < validMoves.length; i++) {
                     if (validMoves[i][0] === r && validMoves[i][1] === c) {
                         square.classList.add('valid-move');
-                        if (board[r][c]) {
-                            square.classList.add('capture');
-                        }
+                        if (board[r][c]) square.classList.add('capture');
                     }
                 }
 
-                // Piece
                 var piece = board[r][c];
                 if (piece) {
                     var pieceEl = document.createElement('span');
@@ -144,7 +105,6 @@
                     square.appendChild(pieceEl);
                 }
 
-                // Click
                 var row = r, col = c;
                 square.addEventListener('click', (function(r, c) {
                     return function() { handleSquareClick(r, c); };
@@ -154,24 +114,14 @@
             }
         }
 
-        var ratingEl = document.getElementById('rating');
-        if (ratingEl) ratingEl.textContent = playerRating;
-
-        var gamesEl = document.getElementById('games-played');
-        if (gamesEl) gamesEl.textContent = gamesPlayed;
+        if (document.getElementById('rating')) document.getElementById('rating').textContent = playerRating;
+        if (document.getElementById('games-played')) document.getElementById('games-played').textContent = gamesPlayed;
     }
 
     function handleSquareClick(row, col) {
-        if (gameOver) {
-            initGame();
-            return;
-        }
+        if (gameOver) { initGame(); return; }
 
-        // Clear hint when user makes a move
-        if (hintMove) {
-            hintMove = null;
-            renderBoard();
-        }
+        if (hintMove) { hintMove = null; renderBoard(); }
 
         var piece = board[row][col];
 
@@ -180,9 +130,7 @@
             var moves = ChessEngine.legalMoves(board, currentPlayer);
             validMoves = [];
             for (var i = 0; i < moves.length; i++) {
-                if (moves[i].from[0] === row && moves[i].from[1] === col) {
-                    validMoves.push(moves[i].to);
-                }
+                if (moves[i].from[0] === row && moves[i].from[1] === col) validMoves.push(moves[i].to);
             }
             renderBoard();
             return;
@@ -191,15 +139,9 @@
         if (selectedSquare) {
             var isValid = false;
             for (var i = 0; i < validMoves.length; i++) {
-                if (validMoves[i][0] === row && validMoves[i][1] === col) {
-                    isValid = true;
-                    break;
-                }
+                if (validMoves[i][0] === row && validMoves[i][1] === col) { isValid = true; break; }
             }
-
-            if (isValid) {
-                makeMove(selectedSquare[0], selectedSquare[1], row, col);
-            }
+            if (isValid) makeMove(selectedSquare[0], selectedSquare[1], row, col);
         }
 
         selectedSquare = null;
@@ -209,162 +151,120 @@
 
     function makeMove(fromR, fromC, toR, toC) {
         var piece = board[fromR][fromC];
-
-        var move = {
-            from: [fromR, fromC],
-            to: [toR, toC],
-            piece: piece,
-            captured: board[toR][toC]
-        };
-
+        var move = { from: [fromR, fromC], to: [toR, toC], piece: piece, captured: board[toR][toC] };
         ChessEngine.makeMove(board, move);
         currentPlayer = currentPlayer === 'w' ? 'b' : 'w';
         selectedSquare = null;
         validMoves = [];
-
         renderBoard();
         updateStatus();
 
         var state = ChessEngine.gameState(board, currentPlayer);
-        if (state === 'checkmate' || state === 'stalemate') {
-            handleGameOver(state);
-            return;
-        }
-
-        if (currentPlayer === 'b' && !gameOver) {
-            setTimeout(makeAIMove, 500);
-        }
+        if (state === 'checkmate' || state === 'stalemate') { handleGameOver(state); return; }
+        if (currentPlayer === 'b' && !gameOver) setTimeout(makeAIMove, 500);
     }
 
     function makeAIMove() {
         if (gameOver || currentPlayer !== 'b') return;
-
-        console.log('AI thinking...');
-
         var move = ChessAI.getBestMove(board, 3, ChessEngine);
-
-        if (!move) {
-            handleGameOver('checkmate');
-            return;
-        }
-
+        if (!move) { handleGameOver('checkmate'); return; }
         ChessEngine.makeMove(board, move);
         currentPlayer = 'w';
-
         renderBoard();
         updateStatus();
-
         var state = ChessEngine.gameState(board, 'w');
-        if (state === 'checkmate' || state === 'stalemate') {
-            handleGameOver(state);
-        }
+        if (state === 'checkmate' || state === 'stalemate') handleGameOver(state);
     }
 
     function handleGameOver(state) {
         gameOver = true;
-
         if (state === 'checkmate') {
             if (currentPlayer === 'w') {
                 showBanner('Checkmate! You win!', 'win');
+                showNotification('Congratulations! You won!', 'success');
                 updateRating(25);
             } else {
                 showBanner('Checkmate! AI wins!', 'loss');
+                showNotification('AI wins! Try again.', 'info');
                 updateRating(-20);
             }
         } else {
             showBanner('Stalemate! Draw.', 'draw');
+            showNotification('Stalemate! Its a draw.', 'info');
         }
     }
 
     function updateRating(delta) {
         playerRating = Math.max(100, playerRating + delta);
         gamesPlayed++;
-
-        if (delta > 0) {
-            gamesWon++;
-            localStorage.setItem('chesstest-games-won', gamesWon);
-        }
-
+        if (delta > 0) { gamesWon++; localStorage.setItem('chesstest-games-won', gamesWon); }
         localStorage.setItem('chesstest-rating', playerRating);
         localStorage.setItem('chesstest-games-played', gamesPlayed);
     }
 
     function updateStatus() {
         var statusEl = document.getElementById('status');
-        if (statusEl) {
-            statusEl.textContent = currentPlayer === 'w' ? 'Your turn' : 'AI thinking...';
-        }
+        if (statusEl) statusEl.textContent = currentPlayer === 'w' ? 'Your turn' : 'AI thinking...';
     }
 
     function showBanner(message, type) {
         var banner = document.getElementById('banner');
-        if (banner) {
-            banner.textContent = message;
-            banner.className = 'banner ' + type;
-        }
+        if (banner) { banner.textContent = message; banner.className = 'banner ' + type; }
     }
 
     function hideBanner() {
         var banner = document.getElementById('banner');
-        if (banner) {
-            banner.className = 'banner hidden';
-        }
+        if (banner) banner.className = 'banner hidden';
     }
 
-    // =======================================================================
-    // HINT SYSTEM
-    // =======================================================================
+    // NOTIFICATIONS
+    function showNotification(message, type) {
+        var existing = document.querySelector('.notification');
+        if (existing) existing.remove();
 
+        var notification = document.createElement('div');
+        notification.className = 'notification ' + (type || 'info');
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        setTimeout(function() {
+            if (notification.parentElement) notification.remove();
+        }, 3000);
+    }
+
+    // HINT SYSTEM
     function showHint() {
         if (gameOver || currentPlayer !== 'w') {
-            alert('No hint available right now!');
+            showNotification('Wait for your turn!', 'info');
             return;
         }
-
-        console.log('Finding a hint...');
-
-        // Get AI's best move as a hint
         var hint = ChessAI.getBestMove(board, 2, ChessEngine);
-
         if (hint) {
             hintMove = hint;
             renderBoard();
-
-            // Show piece name
             var pieceName = getPieceName(hint.piece);
             var fromAlg = ChessEngine.toAlg(hint.from[0], hint.from[1]);
             var toAlg = ChessEngine.toAlg(hint.to[0], hint.to[1]);
-
-            console.log('Hint: ' + pieceName + ' from ' + fromAlg + ' to ' + toAlg);
+            showNotification('Hint: ' + pieceName + ' from ' + fromAlg + ' to ' + toAlg, 'info');
         } else {
-            alert('No hint available - try making a move!');
+            showNotification('No hint available!', 'info');
         }
     }
 
     function getPieceName(piece) {
-        var names = {
-            'K': 'King', 'Q': 'Queen', 'R': 'Rook',
-            'B': 'Bishop', 'N': 'Knight', 'P': 'Pawn',
-            'k': 'King', 'q': 'Queen', 'r': 'Rook',
-            'b': 'Bishop', 'n': 'Knight', 'p': 'Pawn'
-        };
+        var names = { 'K': 'King', 'Q': 'Queen', 'R': 'Rook', 'B': 'Bishop', 'N': 'Knight', 'P': 'Pawn',
+                      'k': 'King', 'q': 'Queen', 'r': 'Rook', 'b': 'Bishop', 'n': 'Knight', 'p': 'Pawn' };
         return names[piece] || 'Piece';
     }
 
-    // =======================================================================
     // THEMES
-    // =======================================================================
-
     function applyTheme(themeName) {
         var theme = themes[themeName];
         if (!theme) return;
-
         currentTheme = themeName;
         localStorage.setItem('chesstest-theme', themeName);
-
         document.documentElement.style.setProperty('--light-square', theme.light);
         document.documentElement.style.setProperty('--dark-square', theme.dark);
-
         var themeSelect = document.getElementById('theme-select');
         if (themeSelect) themeSelect.value = themeName;
     }
@@ -372,7 +272,6 @@
     function setupThemeSelector() {
         var themeSelect = document.getElementById('theme-select');
         if (!themeSelect) return;
-
         themeSelect.innerHTML = '';
         var themeKeys = Object.keys(themes);
         for (var i = 0; i < themeKeys.length; i++) {
@@ -382,56 +281,29 @@
             option.textContent = themes[key].name;
             themeSelect.appendChild(option);
         }
-
         themeSelect.value = currentTheme;
-        themeSelect.addEventListener('change', function(e) {
-            applyTheme(e.target.value);
-        });
+        themeSelect.addEventListener('change', function(e) { applyTheme(e.target.value); });
     }
 
     function setupPieceStyleSelector() {
         var styleSelect = document.getElementById('piece-style-select');
-        if (styleSelect) {
-            styleSelect.addEventListener('change', function(e) {
-                localStorage.setItem('chesstest-piece-style', e.target.value);
-                renderBoard();
-            });
-        }
+        if (styleSelect) styleSelect.addEventListener('change', function(e) {
+            localStorage.setItem('chesstest-piece-style', e.target.value);
+            renderBoard();
+        });
     }
 
-    // =======================================================================
     // BUTTONS
-    // =======================================================================
-
     function setupButtons() {
         var newGameBtn = document.getElementById('new-game');
-        if (newGameBtn) {
-            newGameBtn.addEventListener('click', function() {
-                console.log('New Game clicked!');
-                initGame();
-            });
-        }
-
+        if (newGameBtn) newGameBtn.addEventListener('click', function() { initGame(); });
         var puzzleBtn = document.getElementById('puzzle-mode');
-        if (puzzleBtn) {
-            puzzleBtn.addEventListener('click', function() {
-                alert('Puzzle mode coming soon!');
-            });
-        }
-
+        if (puzzleBtn) puzzleBtn.addEventListener('click', function() { showNotification('Puzzle mode coming soon!', 'info'); });
         var hintBtn = document.getElementById('hint');
-        if (hintBtn) {
-            hintBtn.addEventListener('click', function() {
-                console.log('Hint clicked!');
-                showHint();
-            });
-        }
+        if (hintBtn) hintBtn.addEventListener('click', function() { showHint(); });
     }
 
-    // =======================================================================
     // START
-    // =======================================================================
-
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

@@ -11,7 +11,7 @@
     var selectedSquare = null;
     var validMoves = [];
     var gameOver = false;
-    var puzzleMode = false;
+    var hintMove = null;
 
     // Rating
     var playerRating = 1200;
@@ -42,15 +42,11 @@
     function init() {
         console.log('Chessy initializing...');
 
-        // Load saved data
         loadPreferences();
-
-        // Setup UI
         setupThemeSelector();
         setupPieceStyleSelector();
         setupButtons();
 
-        // Start game
         initGame();
 
         console.log('Chessy ready!');
@@ -63,19 +59,10 @@
         }
 
         var savedRating = localStorage.getItem('chesstest-rating');
-        if (savedRating) {
-            playerRating = parseInt(savedRating, 10);
-        }
+        if (savedRating) playerRating = parseInt(savedRating, 10);
 
         var savedGames = localStorage.getItem('chesstest-games-played');
-        if (savedGames) {
-            gamesPlayed = parseInt(savedGames, 10);
-        }
-
-        var savedWon = localStorage.getItem('chesstest-games-won');
-        if (savedWon) {
-            gamesWon = parseInt(savedWon, 10);
-        }
+        if (savedGames) gamesPlayed = parseInt(savedGames, 10);
 
         applyTheme(currentTheme);
     }
@@ -92,7 +79,7 @@
         selectedSquare = null;
         validMoves = [];
         gameOver = false;
-        puzzleMode = false;
+        hintMove = null;
 
         renderBoard();
         updateStatus();
@@ -117,19 +104,28 @@
                 square.dataset.row = r;
                 square.dataset.col = c;
 
-                // Square color
                 if ((r + c) % 2 === 0) {
                     square.classList.add('light');
                 } else {
                     square.classList.add('dark');
                 }
 
-                // Selected highlight
+                // Hint highlighting
+                if (hintMove) {
+                    if (r === hintMove.from[0] && c === hintMove.from[1]) {
+                        square.classList.add('hint-from');
+                    }
+                    if (r === hintMove.to[0] && c === hintMove.to[1]) {
+                        square.classList.add('hint');
+                    }
+                }
+
+                // Selected
                 if (selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c) {
                     square.classList.add('selected');
                 }
 
-                // Valid moves highlight
+                // Valid moves
                 for (var i = 0; i < validMoves.length; i++) {
                     if (validMoves[i][0] === r && validMoves[i][1] === c) {
                         square.classList.add('valid-move');
@@ -139,7 +135,7 @@
                     }
                 }
 
-                // Add piece
+                // Piece
                 var piece = board[r][c];
                 if (piece) {
                     var pieceEl = document.createElement('span');
@@ -148,19 +144,16 @@
                     square.appendChild(pieceEl);
                 }
 
-                // Click handler
+                // Click
                 var row = r, col = c;
-                square.addEventListener('click', function(r, c) {
-                    return function() {
-                        handleSquareClick(r, c);
-                    };
-                }(row, col));
+                square.addEventListener('click', (function(r, c) {
+                    return function() { handleSquareClick(r, c); };
+                })(row, col));
 
                 boardEl.appendChild(square);
             }
         }
 
-        // Update rating display
         var ratingEl = document.getElementById('rating');
         if (ratingEl) ratingEl.textContent = playerRating;
 
@@ -174,9 +167,14 @@
             return;
         }
 
+        // Clear hint when user makes a move
+        if (hintMove) {
+            hintMove = null;
+            renderBoard();
+        }
+
         var piece = board[row][col];
 
-        // If clicking on own piece, select it
         if (piece && ChessEngine.pieceColor(piece) === currentPlayer) {
             selectedSquare = [row, col];
             var moves = ChessEngine.legalMoves(board, currentPlayer);
@@ -190,7 +188,6 @@
             return;
         }
 
-        // If a square is selected and clicking on valid move
         if (selectedSquare) {
             var isValid = false;
             for (var i = 0; i < validMoves.length; i++) {
@@ -205,7 +202,6 @@
             }
         }
 
-        // Clear selection
         selectedSquare = null;
         validMoves = [];
         renderBoard();
@@ -214,7 +210,6 @@
     function makeMove(fromR, fromC, toR, toC) {
         var piece = board[fromR][fromC];
 
-        // Create move object
         var move = {
             from: [fromR, fromC],
             to: [toR, toC],
@@ -222,10 +217,7 @@
             captured: board[toR][toC]
         };
 
-        // Make move
         ChessEngine.makeMove(board, move);
-
-        // Switch player
         currentPlayer = currentPlayer === 'w' ? 'b' : 'w';
         selectedSquare = null;
         validMoves = [];
@@ -233,14 +225,12 @@
         renderBoard();
         updateStatus();
 
-        // Check game state
         var state = ChessEngine.gameState(board, currentPlayer);
         if (state === 'checkmate' || state === 'stalemate') {
             handleGameOver(state);
             return;
         }
 
-        // AI move if black's turn
         if (currentPlayer === 'b' && !gameOver) {
             setTimeout(makeAIMove, 500);
         }
@@ -322,6 +312,46 @@
     }
 
     // =======================================================================
+    // HINT SYSTEM
+    // =======================================================================
+
+    function showHint() {
+        if (gameOver || currentPlayer !== 'w') {
+            alert('No hint available right now!');
+            return;
+        }
+
+        console.log('Finding a hint...');
+
+        // Get AI's best move as a hint
+        var hint = ChessAI.getBestMove(board, 2, ChessEngine);
+
+        if (hint) {
+            hintMove = hint;
+            renderBoard();
+
+            // Show piece name
+            var pieceName = getPieceName(hint.piece);
+            var fromAlg = ChessEngine.toAlg(hint.from[0], hint.from[1]);
+            var toAlg = ChessEngine.toAlg(hint.to[0], hint.to[1]);
+
+            console.log('Hint: ' + pieceName + ' from ' + fromAlg + ' to ' + toAlg);
+        } else {
+            alert('No hint available - try making a move!');
+        }
+    }
+
+    function getPieceName(piece) {
+        var names = {
+            'K': 'King', 'Q': 'Queen', 'R': 'Rook',
+            'B': 'Bishop', 'N': 'Knight', 'P': 'Pawn',
+            'k': 'King', 'q': 'Queen', 'r': 'Rook',
+            'b': 'Bishop', 'n': 'Knight', 'p': 'Pawn'
+        };
+        return names[piece] || 'Piece';
+    }
+
+    // =======================================================================
     // THEMES
     // =======================================================================
 
@@ -343,7 +373,6 @@
         var themeSelect = document.getElementById('theme-select');
         if (!themeSelect) return;
 
-        // Clear and populate options
         themeSelect.innerHTML = '';
         var themeKeys = Object.keys(themes);
         for (var i = 0; i < themeKeys.length; i++) {
@@ -354,10 +383,7 @@
             themeSelect.appendChild(option);
         }
 
-        // Set current value
         themeSelect.value = currentTheme;
-
-        // Event listener
         themeSelect.addEventListener('change', function(e) {
             applyTheme(e.target.value);
         });
@@ -390,6 +416,14 @@
         if (puzzleBtn) {
             puzzleBtn.addEventListener('click', function() {
                 alert('Puzzle mode coming soon!');
+            });
+        }
+
+        var hintBtn = document.getElementById('hint');
+        if (hintBtn) {
+            hintBtn.addEventListener('click', function() {
+                console.log('Hint clicked!');
+                showHint();
             });
         }
     }

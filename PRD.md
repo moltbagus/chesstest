@@ -19,6 +19,9 @@ A complete, cute chess game with AI opponent, designed for maximum engagement an
 ## 🎮 Core Features
 ### Game Play
 - [x] Complete chess rules (castling, en passant, promotion)
+- [x] Kingside and queenside castling with full rights tracking
+- [x] En passant capture with target-square expiry
+- [x] Auto-promotion to queen on 8th/1st rank
 - [x] AI opponent with configurable difficulty levels
 - [x] Smooth piece movement with visual feedback
 - [x] Timed puzzles and daily challenges
@@ -83,17 +86,18 @@ A complete, cute chess game with AI opponent, designed for maximum engagement an
 
 ## 🚀 Release Roadmap
 
-### Phase 1 (Complete)
-- Core chess functionality
-- Smooth animations and visual polish
-- Theme selector
-- Puzzle mode foundation
-
-### Phase 2 (Ready)
-- Complete rating system integration
-- AI difficulty scaling
-- Social sharing features
-- Advanced sound design
+### Phase 1-2 (Complete ✓)
+- Core chess functionality ✓
+- Smooth animations and visual polish ✓
+- Theme selector ✓
+- Puzzle mode (5 FEN puzzles) ✓
+- AI difficulty (Easy/Medium/Hard) ✓
+- Sound system (WebAudio) ✓
+- Move undo ✓
+- Achievements (4 achievements) ✓
+- Mobile touch improvements ✓
+- Rating system ✓
+- Social sharing features ✓
 
 ### Phase 3 (Future)
 - Online multiplayer
@@ -136,5 +140,5 @@ A complete, cute chess game with AI opponent, designed for maximum engagement an
 - **Updates**: Version changelog in README
 
 ---
-*Last Updated: 2026-08-06 18:25:15*
-*Version: 1.0 - Alpha*
+*Last Updated: 2026-08-08*
+*Version: 1.2 - Complete*

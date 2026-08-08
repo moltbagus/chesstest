@@ -46,9 +46,25 @@
                     </div>
 
                     <div>
+                        <label for="ai-difficulty">AI Difficulty</label>
+                        <select id="ai-difficulty">
+                            <option value="1">Easy</option>
+                            <option value="2">Medium</option>
+                            <option value="3" selected>Hard</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>
+                            <input type="checkbox" id="sound-toggle" checked> Sound
+                        </label>
+                    </div>
+
+                    <div>
                         <button id="hint" class="btn btn-hint">💡 Hint</button>
+                        <button id="undo" class="btn btn-secondary">↩ Undo</button>
+                        <button id="puzzle-mode" class="btn btn-primary">🧩 Puzzles</button>
                         <button id="new-game" class="btn btn-primary">New Game</button>
-                        <button id="puzzle-mode" class="btn btn-primary">Puzzle Mode</button>
                     </div>
 
                     <div class="status-bar">

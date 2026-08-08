@@ -95,6 +95,18 @@ body {
     cursor: pointer;
     position: relative;
     transition: background-color 0.1s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.piece {
+    font-size: min(8vw, 60px);
+    user-select: none;
+    touch-action: none;
+}
+
+.square:active {
+    filter: brightness(1.1);
 }
 
 .square.light {

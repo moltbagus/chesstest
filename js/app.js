@@ -10,10 +10,21 @@
     var gameOver = false;
     var hintMove = null;
 
+    // Game mode
+    var vsAI = true;
+    var aiDifficulty = 3; // 1=easy, 2=medium, 3=hard
+
+    // Move history for undo
+    var moveHistory = [];
+
     // Rating
     var playerRating = 1200;
     var gamesPlayed = 0;
     var gamesWon = 0;
+
+    // Sound
+    var soundEnabled = true;
+    var audioCtx = null;
 
     // Themes
     var currentTheme = 'default';
@@ -43,6 +54,32 @@
         console.log('Chessy ready!');
     }
 
+    function initAudio() {
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) { audioCtx = null; }
+    }
+
+    function playSound(type) {
+        if (!soundEnabled || !audioCtx) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        var freqs = { move: 440, capture: 330, win: 880, lose: 220, hint: 550 };
+        osc.frequency.value = freqs[type] || 440;
+        osc.type = 'sine';
+
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+    }
+
     function loadPreferences() {
         var savedTheme = localStorage.getItem('chesstest-theme');
         if (savedTheme && themes[savedTheme]) currentTheme = savedTheme;
@@ -50,17 +87,31 @@
         if (savedRating) playerRating = parseInt(savedRating, 10);
         var savedGames = localStorage.getItem('chesstest-games-played');
         if (savedGames) gamesPlayed = parseInt(savedGames, 10);
+        var savedVsAI = localStorage.getItem('chesstest-vs-ai');
+        if (savedVsAI !== null) vsAI = savedVsAI === 'true';
+        var savedDiff = localStorage.getItem('chesstest-ai-difficulty');
+        if (savedDiff) aiDifficulty = parseInt(savedDiff, 10);
+        var savedSound = localStorage.getItem('chesstest-sound');
+        if (savedSound !== null) soundEnabled = savedSound !== 'false';
         applyTheme(currentTheme);
+    }
+
+    function savePreferences() {
+        localStorage.setItem('chesstest-vs-ai', vsAI);
+        localStorage.setItem('chesstest-ai-difficulty', aiDifficulty);
+        localStorage.setItem('chesstest-sound', soundEnabled);
     }
 
     // GAME
     function initGame() {
-        board = ChessEngine.initialBoard();
+        ChessEngine.newGame();
+        board = ChessEngine.getBoard();
         currentPlayer = 'w';
         selectedSquare = null;
         validMoves = [];
         gameOver = false;
         hintMove = null;
+        moveHistory = [];
         renderBoard();
         updateStatus();
         hideBanner();
@@ -127,7 +178,7 @@
 
         if (piece && ChessEngine.pieceColor(piece) === currentPlayer) {
             selectedSquare = [row, col];
-            var moves = ChessEngine.legalMoves(board, currentPlayer);
+            var moves = ChessEngine.legalMoves(currentPlayer);
             validMoves = [];
             for (var i = 0; i < moves.length; i++) {
                 if (moves[i].from[0] === row && moves[i].from[1] === col) validMoves.push(moves[i].to);
@@ -151,28 +202,73 @@
 
     function makeMove(fromR, fromC, toR, toC) {
         var piece = board[fromR][fromC];
-        var move = { from: [fromR, fromC], to: [toR, toC], piece: piece, captured: board[toR][toC] };
-        ChessEngine.makeMove(board, move);
+        var captured = board[toR][toC];
+        var move = { from: [fromR, fromC], to: [toR, toC], piece: piece, captured: captured };
+
+        // Save state for undo
+        moveHistory.push({
+            move: move,
+            engineState: ChessEngine.saveState(),
+            currentPlayer: currentPlayer,
+            gameOver: gameOver
+        });
+
+        ChessEngine.makeMove(move);
         currentPlayer = currentPlayer === 'w' ? 'b' : 'w';
         selectedSquare = null;
         validMoves = [];
         renderBoard();
         updateStatus();
 
-        var state = ChessEngine.gameState(board, currentPlayer);
+        // Play sound
+        playSound(captured ? 'capture' : 'move');
+
+        checkPuzzleMove(move);
+
+        var state = ChessEngine.gameState(currentPlayer);
         if (state === 'checkmate' || state === 'stalemate') { handleGameOver(state); return; }
-        if (currentPlayer === 'b' && !gameOver) setTimeout(makeAIMove, 500);
+        if (currentPlayer === 'b' && vsAI && !gameOver) setTimeout(makeAIMove, 500);
+    }
+
+    function undoMove() {
+        if (moveHistory.length === 0) {
+            showNotification('No moves to undo!', 'info');
+            return;
+        }
+
+        var last = moveHistory.pop();
+        ChessEngine.restoreState(last.engineState);
+        board = ChessEngine.getBoard();
+        currentPlayer = last.currentPlayer;
+        gameOver = last.gameOver;
+        selectedSquare = null;
+        validMoves = [];
+        hintMove = null;
+        renderBoard();
+        updateStatus();
+        hideBanner();
+        showNotification('Move undone.', 'info');
     }
 
     function makeAIMove() {
-        if (gameOver || currentPlayer !== 'b') return;
-        var move = ChessAI.getBestMove(board, 3, ChessEngine);
+        if (gameOver || currentPlayer !== 'b' || !vsAI) return;
+        var move = ChessAI.getBestMove(board, aiDifficulty, ChessEngine);
         if (!move) { handleGameOver('checkmate'); return; }
-        ChessEngine.makeMove(board, move);
+
+        // Save for undo
+        moveHistory.push({
+            move: move,
+            engineState: ChessEngine.saveState(),
+            currentPlayer: currentPlayer,
+            gameOver: gameOver
+        });
+
+        ChessEngine.makeMove(move);
         currentPlayer = 'w';
         renderBoard();
         updateStatus();
-        var state = ChessEngine.gameState(board, 'w');
+        playSound('move');
+        var state = ChessEngine.gameState('w');
         if (state === 'checkmate' || state === 'stalemate') handleGameOver(state);
     }
 
@@ -183,15 +279,21 @@
                 showBanner('Checkmate! You win!', 'win');
                 showNotification('Congratulations! You won!', 'success');
                 updateRating(25);
+                winStreak++;
+                playSound('win');
             } else {
                 showBanner('Checkmate! AI wins!', 'loss');
                 showNotification('AI wins! Try again.', 'info');
                 updateRating(-20);
+                winStreak = 0;
+                playSound('lose');
             }
         } else {
             showBanner('Stalemate! Draw.', 'draw');
             showNotification('Stalemate! Its a draw.', 'info');
+            winStreak = 0;
         }
+        checkAchievements();
     }
 
     function updateRating(delta) {
@@ -218,6 +320,35 @@
     }
 
     // NOTIFICATIONS
+    // ACHIEVEMENTS
+    var achievements = [
+        { id: 'first_win', name: 'First Victory', desc: 'Win your first game', unlocked: false },
+        { id: 'puzzle_master', name: 'Puzzle Master', desc: 'Solve 5 puzzles', unlocked: false },
+        { id: 'streak_3', name: 'Hot Streak', desc: 'Win 3 games in a row', unlocked: false },
+        { id: 'rating_1500', name: 'Rising Star', desc: 'Reach 1500 rating', unlocked: false }
+    ];
+    var puzzlesSolved = 0;
+    var winStreak = 0;
+
+    function checkAchievements() {
+        for (var i = 0; i < achievements.length; i++) {
+            var ach = achievements[i];
+            if (ach.unlocked) continue;
+
+            var unlock = false;
+            if (ach.id === 'first_win' && gamesWon > 0) unlock = true;
+            if (ach.id === 'puzzle_master' && puzzlesSolved >= 5) unlock = true;
+            if (ach.id === 'streak_3' && winStreak >= 3) unlock = true;
+            if (ach.id === 'rating_1500' && playerRating >= 1500) unlock = true;
+
+            if (unlock) {
+                ach.unlocked = true;
+                showNotification('🏆 Achievement: ' + ach.name + '!', 'success');
+                playSound('win');
+            }
+        }
+    }
+
     function showNotification(message, type) {
         var existing = document.querySelector('.notification');
         if (existing) existing.remove();
@@ -297,10 +428,118 @@
     function setupButtons() {
         var newGameBtn = document.getElementById('new-game');
         if (newGameBtn) newGameBtn.addEventListener('click', function() { initGame(); });
-        var puzzleBtn = document.getElementById('puzzle-mode');
-        if (puzzleBtn) puzzleBtn.addEventListener('click', function() { showNotification('Puzzle mode coming soon!', 'info'); });
+        var undoBtn = document.getElementById('undo');
+        if (undoBtn) undoBtn.addEventListener('click', function() { undoMove(); });
         var hintBtn = document.getElementById('hint');
         if (hintBtn) hintBtn.addEventListener('click', function() { showHint(); });
+
+        // AI Difficulty
+        var diffSelect = document.getElementById('ai-difficulty');
+        if (diffSelect) {
+            diffSelect.value = aiDifficulty;
+            diffSelect.addEventListener('change', function(e) {
+                aiDifficulty = parseInt(e.target.value, 10);
+                savePreferences();
+            });
+        }
+
+        // Sound toggle
+        var soundToggle = document.getElementById('sound-toggle');
+        if (soundToggle) {
+            soundToggle.checked = soundEnabled;
+            soundToggle.addEventListener('change', function(e) {
+                soundEnabled = e.target.checked;
+                savePreferences();
+                if (soundEnabled) playSound('move');
+            });
+        }
+
+        // Puzzle mode
+        var puzzleBtn = document.getElementById('puzzle-mode');
+        if (puzzleBtn) puzzleBtn.addEventListener('click', function() { startPuzzle(); });
+    }
+
+    // PUZZLE MODE
+    var puzzleMode = false;
+    var puzzleSolution = [];
+    var puzzleMoveIndex = 0;
+
+    var PUZZLES = [
+        { fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4', moves: ['h5f7'], name: 'Scholar\'s Mate' },
+        { fen: 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3', moves: ['f3g5'], name: 'Fried Lion' },
+        { fen: 'rnbqkbnr/ppppp2p/8/5pp1/4P3/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3', moves: ['e4f5'], name: 'King\'s Gambit' },
+        { fen: 'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4', moves: ['c4f7'], name: 'Legal Trap' },
+        { fen: 'r2qk2r/ppp2ppp/2n1bn2/3pp3/8/2NPBNP1/PPP2PBP/R2QK2R w KQq - 0 8', moves: ['d1h5'], name: 'Damiano Defense' }
+    ];
+
+    function startPuzzle() {
+        var puzzle = PUZZLES[Math.floor(Math.random() * PUZZLES.length)];
+        loadPositionFromFEN(puzzle.fen);
+        puzzleSolution = puzzle.moves;
+        puzzleMoveIndex = 0;
+        puzzleMode = true;
+        showNotification('Puzzle: ' + puzzle.name + ' - Find the winning move!', 'info');
+        playSound('hint');
+    }
+
+    function loadPositionFromFEN(fen) {
+        // Parse FEN and set up board
+        var parts = fen.split(' ');
+        var rows = parts[0].split('/');
+        board = Array(8).fill(null).map(function() { return Array(8).fill(null); });
+
+        var pieceMap = { 'P': 'P', 'N': 'N', 'B': 'B', 'R': 'R', 'Q': 'Q', 'K': 'K', 'p': 'p', 'n': 'n', 'b': 'b', 'r': 'r', 'q': 'q', 'k': 'k' };
+
+        for (var r = 0; r < 8; r++) {
+            var rowStr = rows[7 - r];
+            var c = 0;
+            for (var i = 0; i < rowStr.length; i++) {
+                var ch = rowStr[i];
+                if (ch >= '1' && ch <= '8') {
+                    c += parseInt(ch, 10);
+                } else if (pieceMap[ch]) {
+                    board[r][c] = pieceMap[ch];
+                    c++;
+                }
+            }
+        }
+
+        currentPlayer = parts[1] === 'w' ? 'w' : 'b';
+        selectedSquare = null;
+        validMoves = [];
+        gameOver = false;
+        hintMove = null;
+        moveHistory = [];
+
+        renderBoard();
+        updateStatus();
+        hideBanner();
+    }
+
+    function checkPuzzleMove(move) {
+        if (!puzzleMode || puzzleMoveIndex >= puzzleSolution.length) return false;
+
+        var expected = puzzleSolution[puzzleMoveIndex];
+        var fromAlg = ChessEngine.toAlg(move.from[0], move.from[1]);
+        var toAlg = ChessEngine.toAlg(move.to[0], move.to[1]);
+
+        if (fromAlg + toAlg === expected || fromAlg + toAlg === expected.replace('x', '')) {
+            puzzleMoveIndex++;
+            if (puzzleMoveIndex >= puzzleSolution.length) {
+                puzzleMode = false;
+                puzzlesSolved++;
+                showBanner('Puzzle Solved! +10 rating', 'win');
+                showNotification('Puzzle completed!', 'success');
+                updateRating(10);
+                playSound('win');
+                checkAchievements();
+                return true;
+            }
+            showNotification('Correct! Find the next move...', 'info');
+            playSound('move');
+            return true;
+        }
+        return false;
     }
 
     // START

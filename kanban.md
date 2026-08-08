@@ -19,6 +19,12 @@
 - [x] Add last move visual indicators (arrow + highlight)
 - [x] Implement 2-second auto-clear for visual effects
 - [x] Add smooth piece movement animations
+- [x] Fix inverted knight/king attack detection (was blocking Nf3 and other moves)
+- [x] Add kingside castling (O-O) with full rights tracking
+- [x] Add queenside castling (O-O-O) with full rights tracking
+- [x] Add en passant capture with target-square expiry
+- [x] Refactor engine to stateful API (saveState/restoreState for AI)
+- [x] Update AI to use engine state save/restore (no manual board manipulation)
 
 **Phase 2 - Theme Selector**
 - [x] Create settings panel with dropdown
@@ -159,6 +165,7 @@
 - **Lines of code**: ~2,000 total
 - **Test coverage**: 87%
 - **Bug fix time**: < 2 hours
+- **Engine v2**: Castling + en passant implemented
 
 ### User Experience Metrics
 - **Time to first feature**: 15 minutes
@@ -207,6 +214,7 @@
 4. Improve mobile-specific optimizations
 
 ---
-*Last Updated: {timestamp}*
+*Last Updated: 2026-08-07*
 *Next Sprint: Sprint 2 - Gamification & Social*
+*Engine Version: v2 (castling + en passant)*
 *Estimated Velocity: 10 points/day*

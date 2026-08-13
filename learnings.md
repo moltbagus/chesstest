@@ -39,6 +39,37 @@
 - Balance hint availability to maintain challenge
 - Track progress to show improvement
 
+## 📚 Sprint 2 Learnings – Kid Gamification (Aug 2026)
+
+### Key Insights
+
+#### 1. Cute Opponents Beat Generic Difficulty
+**What we learned:**
+- Naming the AI “Bunny”, “Fox”, “Panda”, “Dragon” makes losses feel friendly and wins feel like beating a character
+- Children stay longer when the opponent has personality and scales visibly with their level
+
+**Best practices:**
+- Always give AI opponents names + emojis when targeting kids
+- Tie difficulty to visible progression (level gates)
+
+#### 2. Instant Visual Rewards > Subtle Feedback
+**What we learned:**
+- Confetti on every win produces audible delight and repeated plays
+- XP bar filling gives immediate dopamine even on small gains
+
+**Best practices:**
+- Use big, obvious celebrations (confetti, banners, toasts)
+- Show progress on every action, not just at session end
+
+#### 3. Simple Math Bugs Kill Motivation
+**What we learned:**
+- A broken XP bar (always near 0%) instantly removes the feeling of progress
+- Audio never playing because initAudio() was never called removed all feedback
+
+**Best practices:**
+- Test progression systems with fresh localStorage on every major change
+- Always call audio initialization on first user gesture
+
 #### 4. Elo Rating System
 **What we learned:**
 - K-factor 32 works well for chess games

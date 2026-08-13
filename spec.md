@@ -14,7 +14,7 @@ Progressive Enhancement approach
 No backend required - Client-side only
 Static site deployment
 WebAudio API for sound generation
-LocalStorage for persistence
+LocalStorage for persistence (rating, XP, level, streaks, theme)
 ```
 
 ### Deployment
@@ -29,12 +29,12 @@ CDN: Edge distribution
 chessy/
 ├── index.html                    # Main application
 ├── css/
-│   ├── style.css                # Main styles + themes
+│   ├── style.css                # Main styles + themes + XP bar
 │   └── (no subdirs)             # Flat structure
 ├── js/
-│   ├── chess.js                 # Chess engine + Elo system
+│   ├── chess.js                 # Chess engine
 │   ├── ai.js                    # AI opponent logic
-│   ├── app.js                   # Game management + UI
+│   ├── app.js                   # Game management + UI + gamification
 │   └── puzzles.js               # Puzzle database and logic
 ├── assets/                      # Static assets (if any)
 ├── README.md                    # Documentation
@@ -58,6 +58,25 @@ chessy/
 ### Development Tools
 - **Node.js**: For local development server
 - **Git**: Version control
+
+## 🧒 Kid Gamification Layer (Current)
+
+### State Variables (app.js)
+- `playerXP`, `playerLevel` — persisted progression
+- `currentOpponent` — cute animal chosen by level (Bunny, Fox, Panda, Dragon)
+- `winStreak`, `puzzlesSolved` — achievement triggers
+
+### UI Additions
+- Level display + dynamic XP progress bar
+- Opponent name + emoji shown in status
+- Confetti launcher on every player win
+- Achievement toast notifications
+
+### Opponent Scaling
+Level 1-2 → Bunny (easy)  
+Level 3-4 → Fox  
+Level 5-6 → Panda  
+Level 7+ → Dragon (hard)
 - **Vercel CLI**: Deployment
 - **Modern browser**: Chrome, Firefox, Safari, Edge
 

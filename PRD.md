@@ -1,20 +1,20 @@
 # Chessy - Product Requirements Document
 
 ## 📋 Product Overview
-A complete, cute chess game with AI opponent, designed for maximum engagement and enjoyment.
+A delightful, kid-friendly chess game with cute animal opponents, XP progression, and instant celebrations — built to make children excited to play and improve.
 
 ## 🎯 Primary Goals
-- Transform functional chess into delightful experience
-- Increase daily retention through puzzle mode
-- Provide customizable visual themes
-- Track player improvement via Elo rating system
-- Deliver smooth, polished gameplay
+- Make chess exciting and rewarding for kids (ages 6-12)
+- Deliver instant visual feedback and celebrations on every win
+- Provide clear progression through levels, XP, and cute opponents
+- Maintain engagement via streaks, achievements, and escalating animal opponents
+- Keep the experience simple, fast, and delightful on any device
 
 ## 👥 Target Users
-- Casual players looking for fun chess gameplay
-- Competitive players wanting skill tracking
-- New chess learners through tutorial puzzles
-- Collectors of retro/cute aesthetic games
+- Kids (6-12) discovering chess for the first time
+- Parents looking for a safe, engaging, ad-free chess experience
+- Families wanting short, rewarding play sessions
+- Young players motivated by levels, cute characters, and celebrations
 
 ## 🎮 Core Features
 ### Game Play
@@ -40,6 +40,11 @@ A complete, cute chess game with AI opponent, designed for maximum engagement an
 - [x] Puzzle scoring and time bonuses
 - [x] Achievement-based gamification
 - [x] Progress tracking and statistics
+- [x] Cute animal opponents that scale with player level (Bunny → Dragon)
+- [x] XP + Level system with visible progress bar
+- [x] Confetti celebrations and big win banners
+- [x] Win streaks and achievement unlocks
+- [x] Opponent personality and difficulty scaling
 
 ### Sound & Audio
 - [x] WebAudio-based sound effects
@@ -68,16 +73,16 @@ A complete, cute chess game with AI opponent, designed for maximum engagement an
 
 ## 📊 Success Metrics
 
-### Engagement
-- Daily active users > 30%
-- Puzzle completion rate > 70%
-- Average session time > 10 minutes
-- Return visit rate > 40%
+### Engagement (Kids)
+- Session length > 8 minutes
+- Win celebrations watched to completion > 90%
+- Level-up events per week > 3
+- Puzzle attempts per session > 2
 
-### Retention
-- Day 1 retention > 60%
-- Day 7 retention > 20%
-- Day 30 retention > 10%
+### Retention (Families)
+- Day 1 return rate > 65%
+- 7-day streak rate > 25%
+- Parent-initiated sessions > 40% of total playtime
 
 ### Performance
 - Page load time < 2 seconds

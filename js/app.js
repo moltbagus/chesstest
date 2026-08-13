@@ -23,6 +23,10 @@
     var gamesWon = 0;
     var playerXP = 0;
     var playerLevel = 1;
+    var playerName = '';
+    var matchesPlayed = 0;
+    var matchesWon = 0;
+    var matchesDrawn = 0;
 
     // Sound
     var soundEnabled = true;
@@ -54,6 +58,7 @@
         setupPieceStyleSelector();
         setupButtons();
         initGame();
+        setupProfile();
         console.log('Chessy ready!');
     }
 
@@ -90,6 +95,8 @@
         if (savedRating) playerRating = parseInt(savedRating, 10);
         var savedGames = localStorage.getItem('chesstest-games-played');
         if (savedGames) gamesPlayed = parseInt(savedGames, 10);
+        var savedWins = localStorage.getItem('chesstest-games-won');
+        if (savedWins) gamesWon = parseInt(savedWins, 10);
         var savedVsAI = localStorage.getItem('chesstest-vs-ai');
         if (savedVsAI !== null) vsAI = savedVsAI === 'true';
         var savedDiff = localStorage.getItem('chesstest-ai-difficulty');
@@ -100,6 +107,18 @@
         if (savedXP) playerXP = parseInt(savedXP, 10);
         var savedLevel = localStorage.getItem('chesstest-level');
         if (savedLevel) playerLevel = parseInt(savedLevel, 10);
+        var savedName = localStorage.getItem('chesstest-player-name');
+        if (savedName) playerName = savedName;
+        var savedMatches = localStorage.getItem('chesstest-matches-played');
+        if (savedMatches) matchesPlayed = parseInt(savedMatches, 10);
+        var savedMatchWins = localStorage.getItem('chesstest-matches-won');
+        if (savedMatchWins) matchesWon = parseInt(savedMatchWins, 10);
+        var savedDraws = localStorage.getItem('chesstest-matches-drawn');
+        if (savedDraws) matchesDrawn = parseInt(savedDraws, 10);
+        var savedPuzzles = localStorage.getItem('chesstest-puzzles-solved');
+        if (savedPuzzles) puzzlesSolved = parseInt(savedPuzzles, 10);
+        var savedStreak = localStorage.getItem('chesstest-win-streak');
+        if (savedStreak) winStreak = parseInt(savedStreak, 10);
         applyTheme(currentTheme);
     }
 
@@ -305,6 +324,7 @@
                 showNotification('AI wins! Try again.', 'info');
                 updateRating(-20);
                 winStreak = 0;
+                recordMatch('loss');
                 playSound('lose');
             } else {
                 // Black to move but cannot → black is checkmated, user wins
@@ -312,6 +332,7 @@
                 showNotification('Congratulations! You won!', 'success');
                 updateRating(25);
                 winStreak++;
+                recordMatch('win');
                 playSound('win');
                 launchConfetti();
             }
@@ -319,6 +340,7 @@
             showBanner('Stalemate! Draw.', 'draw');
             showNotification('Stalemate! Its a draw.', 'info');
             winStreak = 0;
+            recordMatch('draw');
         }
         checkAchievements();
     }
@@ -344,6 +366,29 @@
         localStorage.setItem('chesstest-games-played', gamesPlayed);
         localStorage.setItem('chesstest-xp', playerXP);
         localStorage.setItem('chesstest-level', playerLevel);
+        saveProgress();
+    }
+
+    function recordMatch(result) {
+        matchesPlayed++;
+        if (result === 'win') matchesWon++;
+        if (result === 'draw') matchesDrawn++;
+        saveProgress();
+        renderLeaderboard();
+    }
+
+    function saveProgress() {
+        localStorage.setItem('chesstest-games-won', gamesWon);
+        localStorage.setItem('chesstest-rating', playerRating);
+        localStorage.setItem('chesstest-games-played', gamesPlayed);
+        localStorage.setItem('chesstest-xp', playerXP);
+        localStorage.setItem('chesstest-level', playerLevel);
+        localStorage.setItem('chesstest-matches-played', matchesPlayed);
+        localStorage.setItem('chesstest-matches-won', matchesWon);
+        localStorage.setItem('chesstest-matches-drawn', matchesDrawn);
+        localStorage.setItem('chesstest-puzzles-solved', puzzlesSolved);
+        localStorage.setItem('chesstest-win-streak', winStreak);
+        saveLeaderboardEntry();
     }
 
     function updateStatus() {
@@ -364,6 +409,146 @@
         currentOpponent = opp;
         var status = document.getElementById('status');
         if (status) status.textContent = 'Your turn vs ' + opp.emoji + ' ' + opp.name;
+    }
+
+    function setupProfile() {
+        var changeName = document.getElementById('change-name');
+        if (changeName) changeName.addEventListener('click', function() { openNameModal(true); });
+
+        var form = document.getElementById('name-form');
+        if (form) form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            setPlayerName(document.getElementById('player-name').value);
+        });
+
+        if (playerName) saveLeaderboardEntry();
+        renderLeaderboard();
+        if (!playerName) openNameModal(false);
+    }
+
+    function openNameModal(isChange) {
+        var modal = document.getElementById('name-modal');
+        var input = document.getElementById('player-name');
+        var title = document.getElementById('name-title');
+        if (!modal || !input) return;
+        if (title) title.textContent = isChange ? 'Update your player name' : 'Welcome to Chessy!';
+        input.value = playerName;
+        modal.classList.remove('hidden');
+        setTimeout(function() { input.focus(); input.select(); }, 0);
+    }
+
+    function setPlayerName(value) {
+        var nextName = value.replace(/\s+/g, ' ').trim().slice(0, 100);
+        if (!nextName) return;
+
+        var oldName = playerName;
+        if (oldName && oldName !== nextName) {
+            var entries = readLeaderboard();
+            var oldIndex = entries.findIndex(function(entry) { return entry.name === oldName; });
+            var newIndex = entries.findIndex(function(entry) { return entry.name === nextName; });
+            if (oldIndex >= 0) {
+                if (newIndex >= 0 && newIndex !== oldIndex) entries.splice(oldIndex, 1);
+                else entries[oldIndex].name = nextName;
+                localStorage.setItem('chesstest-leaderboard', JSON.stringify(entries));
+            }
+        }
+
+        playerName = nextName;
+        localStorage.setItem('chesstest-player-name', playerName);
+        saveLeaderboardEntry();
+        renderLeaderboard();
+        var modal = document.getElementById('name-modal');
+        if (modal) modal.classList.add('hidden');
+        showNotification('Welcome, ' + playerName + '! Your progress is saved.', 'success');
+    }
+
+    function readLeaderboard() {
+        try {
+            var saved = JSON.parse(localStorage.getItem('chesstest-leaderboard') || '[]');
+            return Array.isArray(saved) ? saved : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function saveLeaderboardEntry() {
+        if (!playerName) return;
+        var entries = readLeaderboard();
+        var entry = {
+            name: playerName,
+            rating: playerRating,
+            level: playerLevel,
+            matchesPlayed: matchesPlayed,
+            matchesWon: matchesWon,
+            matchesDrawn: matchesDrawn,
+            streak: winStreak,
+            puzzles: puzzlesSolved,
+            lastPlayed: Date.now()
+        };
+        var index = entries.findIndex(function(item) { return item.name === playerName; });
+        if (index === -1) entries.push(entry);
+        else entries[index] = entry;
+        localStorage.setItem('chesstest-leaderboard', JSON.stringify(entries));
+    }
+
+    function renderLeaderboard() {
+        var leaderboard = document.getElementById('leaderboard');
+        if (!leaderboard) return;
+        leaderboard.innerHTML = '';
+
+        var entries = readLeaderboard().sort(function(a, b) {
+            return (b.rating || 0) - (a.rating || 0) || (b.matchesWon || 0) - (a.matchesWon || 0) ||
+                (b.level || 0) - (a.level || 0);
+        });
+        var visible = entries.slice(0, 5);
+        var currentIndex = entries.findIndex(function(entry) { return entry.name === playerName; });
+        if (currentIndex >= 5) visible.push(entries[currentIndex]);
+
+        if (!visible.length) {
+            var empty = document.createElement('p');
+            empty.className = 'leaderboard-empty';
+            empty.textContent = 'Be the first champion!';
+            leaderboard.appendChild(empty);
+            return;
+        }
+
+        visible.forEach(function(entry, index) {
+            var rank = entries.indexOf(entry) + 1;
+            var row = document.createElement('div');
+            row.className = 'leaderboard-row' + (entry.name === playerName ? ' current-player' : '');
+
+            var rankEl = document.createElement('span');
+            rankEl.className = 'leaderboard-rank';
+            rankEl.textContent = rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : '#' + rank;
+
+            var identity = document.createElement('div');
+            identity.className = 'leaderboard-identity';
+            var name = document.createElement('strong');
+            name.textContent = entry.name;
+            var details = document.createElement('small');
+            var games = entry.matchesPlayed || 0;
+            var wins = entry.matchesWon || 0;
+            var winRate = games ? Math.round(wins / games * 100) : 0;
+            details.textContent = 'Lv ' + (entry.level || 1) + ' · ' + wins + 'W · ' + winRate + '% win rate';
+            identity.appendChild(name);
+            identity.appendChild(details);
+
+            var score = document.createElement('div');
+            score.className = 'leaderboard-score';
+            score.innerHTML = '<strong>⭐ ' + (entry.rating || 1200) + '</strong><small>🔥 ' + (entry.streak || 0) + ' streak</small>';
+
+            row.appendChild(rankEl);
+            row.appendChild(identity);
+            row.appendChild(score);
+            leaderboard.appendChild(row);
+
+            if (index === 4 && currentIndex >= 5) {
+                var separator = document.createElement('div');
+                separator.className = 'leaderboard-separator';
+                separator.textContent = '···';
+                leaderboard.insertBefore(separator, row);
+            }
+        });
     }
 
     // Cute AI opponents

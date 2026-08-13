@@ -17,10 +17,12 @@
     // Move history for undo
     var moveHistory = [];
 
-    // Rating
+    // Rating + XP
     var playerRating = 1200;
     var gamesPlayed = 0;
     var gamesWon = 0;
+    var playerXP = 0;
+    var playerLevel = 1;
 
     // Sound
     var soundEnabled = true;
@@ -47,6 +49,7 @@
     function init() {
         console.log('Chessy initializing...');
         loadPreferences();
+        initAudio();
         setupThemeSelector();
         setupPieceStyleSelector();
         setupButtons();
@@ -93,6 +96,10 @@
         if (savedDiff) aiDifficulty = parseInt(savedDiff, 10);
         var savedSound = localStorage.getItem('chesstest-sound');
         if (savedSound !== null) soundEnabled = savedSound !== 'false';
+        var savedXP = localStorage.getItem('chesstest-xp');
+        if (savedXP) playerXP = parseInt(savedXP, 10);
+        var savedLevel = localStorage.getItem('chesstest-level');
+        if (savedLevel) playerLevel = parseInt(savedLevel, 10);
         applyTheme(currentTheme);
     }
 
@@ -116,6 +123,8 @@
         updateStatus();
         hideBanner();
         showNotification('New game started! Your turn.', 'info');
+        showOpponent();
+        updateXPBar();
     }
 
     function renderBoard() {
@@ -167,6 +176,8 @@
 
         if (document.getElementById('rating')) document.getElementById('rating').textContent = playerRating;
         if (document.getElementById('games-played')) document.getElementById('games-played').textContent = gamesPlayed;
+        if (document.getElementById('level')) document.getElementById('level').textContent = playerLevel;
+        updateXPBar();
     }
 
     function handleSquareClick(row, col) {
@@ -252,7 +263,8 @@
 
     function makeAIMove() {
         if (gameOver || currentPlayer !== 'b' || !vsAI) return;
-        var move = ChessAI.getBestMove(board, aiDifficulty, ChessEngine);
+        var diff = currentOpponent ? currentOpponent.diff : aiDifficulty;
+        var move = ChessAI.getBestMove(board, diff, ChessEngine);
         if (!move) { handleGameOver('checkmate'); return; }
 
         // Save for undo
@@ -281,6 +293,7 @@
                 updateRating(25);
                 winStreak++;
                 playSound('win');
+                launchConfetti();
             } else {
                 showBanner('Checkmate! AI wins!', 'loss');
                 showNotification('AI wins! Try again.', 'info');
@@ -300,14 +313,53 @@
         playerRating = Math.max(100, playerRating + delta);
         gamesPlayed++;
         if (delta > 0) { gamesWon++; localStorage.setItem('chesstest-games-won', gamesWon); }
+
+        // XP + level
+        var xpGain = delta > 0 ? 25 + Math.floor(delta / 2) : 10;
+        playerXP += xpGain;
+        var xpNeeded = playerLevel * 100;
+        while (playerXP >= xpNeeded) {
+            playerLevel++;
+            playerXP -= xpNeeded;
+            showNotification('🎉 Level Up! You are now level ' + playerLevel, 'success');
+            xpNeeded = playerLevel * 100;
+            updateXPBar();
+        }
+
         localStorage.setItem('chesstest-rating', playerRating);
         localStorage.setItem('chesstest-games-played', gamesPlayed);
+        localStorage.setItem('chesstest-xp', playerXP);
+        localStorage.setItem('chesstest-level', playerLevel);
     }
 
     function updateStatus() {
         var statusEl = document.getElementById('status');
         if (statusEl) statusEl.textContent = currentPlayer === 'w' ? 'Your turn' : 'AI thinking...';
     }
+
+    function updateXPBar() {
+        var bar = document.getElementById('xp-bar');
+        if (!bar) return;
+        var xpNeeded = playerLevel * 100;
+        var percent = Math.min(100, Math.floor(((playerXP % xpNeeded) / xpNeeded) * 100));
+        bar.style.width = percent + '%';
+    }
+
+    function showOpponent() {
+        var opp = AI_OPPONENTS[Math.min(Math.floor(playerLevel / 2), AI_OPPONENTS.length - 1)];
+        currentOpponent = opp;
+        var status = document.getElementById('status');
+        if (status) status.textContent = 'Your turn vs ' + opp.emoji + ' ' + opp.name;
+    }
+
+    // Cute AI opponents
+    var AI_OPPONENTS = [
+        { name: 'Bunny', emoji: '🐰', diff: 1 },
+        { name: 'Fox', emoji: '🦊', diff: 2 },
+        { name: 'Panda', emoji: '🐼', diff: 2 },
+        { name: 'Dragon', emoji: '🐉', diff: 3 }
+    ];
+    var currentOpponent = AI_OPPONENTS[2];
 
     function showBanner(message, type) {
         var banner = document.getElementById('banner');
@@ -386,6 +438,26 @@
         var names = { 'K': 'King', 'Q': 'Queen', 'R': 'Rook', 'B': 'Bishop', 'N': 'Knight', 'P': 'Pawn',
                       'k': 'King', 'q': 'Queen', 'r': 'Rook', 'b': 'Bishop', 'n': 'Knight', 'p': 'Pawn' };
         return names[piece] || 'Piece';
+    }
+
+    function launchConfetti() {
+        for (var i = 0; i < 80; i++) {
+            var conf = document.createElement('div');
+            conf.textContent = ['🎉','⭐','✨','🦄','🐰'][Math.floor(Math.random()*5)];
+            conf.style.position = 'fixed';
+            conf.style.left = Math.random()*100 + 'vw';
+            conf.style.top = '-20px';
+            conf.style.fontSize = (16 + Math.random()*20) + 'px';
+            conf.style.zIndex = '9999';
+            conf.style.transition = 'transform 1.8s linear, opacity 1.8s linear';
+            document.body.appendChild(conf);
+            var dx = (Math.random()-0.5)*400;
+            setTimeout(function(c, d) {
+                c.style.transform = 'translateY(100vh) translateX(' + d + 'px)';
+                c.style.opacity = '0';
+            }, 10, conf, dx);
+            setTimeout(function(c){ c.remove(); }, 2200, conf);
+        }
     }
 
     // THEMES
@@ -510,6 +582,9 @@
         gameOver = false;
         hintMove = null;
         moveHistory = [];
+        puzzleMode = false;
+        puzzleSolution = [];
+        puzzleMoveIndex = 0;
 
         renderBoard();
         updateStatus();

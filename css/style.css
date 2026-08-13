@@ -109,6 +109,13 @@ body {
     filter: brightness(1.1);
 }
 
+.google-piece svg {
+    width: 80%;
+    height: 80%;
+    display: block;
+    margin: auto;
+}
+
 .square.light {
     background-color: var(--light-square);
 }

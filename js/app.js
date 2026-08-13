@@ -288,18 +288,20 @@
         gameOver = true;
         if (state === 'checkmate') {
             if (currentPlayer === 'w') {
+                // White to move but cannot → white is checkmated, AI wins
+                showBanner('Checkmate! AI wins!', 'loss');
+                showNotification('AI wins! Try again.', 'info');
+                updateRating(-20);
+                winStreak = 0;
+                playSound('lose');
+            } else {
+                // Black to move but cannot → black is checkmated, user wins
                 showBanner('Checkmate! You win!', 'win');
                 showNotification('Congratulations! You won!', 'success');
                 updateRating(25);
                 winStreak++;
                 playSound('win');
                 launchConfetti();
-            } else {
-                showBanner('Checkmate! AI wins!', 'loss');
-                showNotification('AI wins! Try again.', 'info');
-                updateRating(-20);
-                winStreak = 0;
-                playSound('lose');
             }
         } else {
             showBanner('Stalemate! Draw.', 'draw');

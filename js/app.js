@@ -460,27 +460,27 @@
 
     function getGooglePieceSVG(piece) {
         var isWhite = piece === piece.toUpperCase();
-        var fill = isWhite ? '#f0f0f0' : '#2c3e50';
-        var stroke = isWhite ? '#2c3e50' : '#f0f0f0';
-        var common = 'stroke="' + stroke + '" stroke-width="1.5" fill="' + fill + '" stroke-linejoin="round"';
+        var fill = isWhite ? '#f8f9fa' : '#202124';
+        var accent = isWhite ? '#202124' : '#f8f9fa';
+        var s = 'stroke="' + accent + '" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"';
 
         if (piece.toUpperCase() === 'K') {
-            return '<svg viewBox="0 0 45 45"><g ' + common + '><path d="M22.5 11.63V6M20 8h5"/><path d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2-3-2s-3 2-3 2c-1.5 3 3 10.5 3 10.5"/><path d="M11.5 30c5.5 3 16.5 3 22 0"/><path d="M11.5 34c5.5 3 16.5 3 22 0"/><path d="M11.5 38c5.5 3 16.5 3 22 0"/></g></svg>';
+            return '<svg viewBox="0 0 45 45"><g fill="' + fill + '" ' + s + '><path d="M22.5 8v6"/><path d="M20 10h5"/><circle cx="22.5" cy="19" r="3"/><path d="M22.5 22v3"/><path d="M17 25h11l-1 4H18z"/><path d="M13 34h19"/><path d="M12 38h21"/></g></svg>';
         }
         if (piece.toUpperCase() === 'Q') {
-            return '<svg viewBox="0 0 45 45"><g ' + common + '><circle cx="22.5" cy="9" r="2.5"/><path d="M22.5 30.5l-4-12 4 3 4-3-4 12"/><path d="M11.5 34c5.5 3 16.5 3 22 0"/><path d="M11.5 38c5.5 3 16.5 3 22 0"/></g></svg>';
+            return '<svg viewBox="0 0 45 45"><g fill="' + fill + '" ' + s + '><circle cx="22.5" cy="10" r="3"/><path d="M22.5 13l-3 8 3 2 3-2-3-8z"/><path d="M13 30h19"/><path d="M12 35h21"/><path d="M11 40h23"/></g></svg>';
         }
         if (piece.toUpperCase() === 'R') {
-            return '<svg viewBox="0 0 45 45"><g ' + common + '><path d="M9 39h27v-3H9v3zM12 36v-4h21v4H12zM11 14V9h4v2h5V9h5v2h5V9h4v5"/><path d="M34 14l-3 3H14l-3-3"/><path d="M31 17v12.5H14V17"/><path d="M31 29.5l1.5 2.5h-20l1.5-2.5"/></g></svg>';
+            return '<svg viewBox="0 0 45 45"><g fill="' + fill + '" ' + s + '><path d="M11 10h23v5H11z"/><path d="M13 15v3h19v-3"/><path d="M12 18h21v16H12z"/><path d="M11 34h23v4H11z"/></g></svg>';
         }
         if (piece.toUpperCase() === 'B') {
-            return '<svg viewBox="0 0 45 45"><g ' + common + '><path d="M22.5 9a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3z"/><path d="M22.5 15v4.5"/><path d="M17.5 19.5h10l-5 7.5-5-7.5z"/><path d="M15.5 30c5.5 3 16.5 3 22 0"/><path d="M15.5 34c5.5 3 16.5 3 22 0"/><path d="M15.5 38c5.5 3 16.5 3 22 0"/></g></svg>';
+            return '<svg viewBox="0 0 45 45"><g fill="' + fill + '" ' + s + '><circle cx="22.5" cy="12" r="4"/><path d="M22.5 16v5"/><path d="M16 21h13l-2 7H18z"/><path d="M13 34h19"/><path d="M12 38h21"/></g></svg>';
         }
         if (piece.toUpperCase() === 'N') {
-            return '<svg viewBox="0 0 45 45"><g ' + common + '><path d="M22 10c4 0 6 2 7 5 1 4-1 7-4 9l-1 6-3-1-1-4-3 1-1-3c-3-2-4-5-3-8 1-3 4-5 8-5z"/><path d="M18 32l1 3h7l1-3"/><path d="M15.5 34c5.5 3 16.5 3 22 0"/><path d="M15.5 38c5.5 3 16.5 3 22 0"/></g></svg>';
+            return '<svg viewBox="0 0 45 45"><g fill="' + fill + '" ' + s + '><path d="M14 32l2 3h13l2-3"/><path d="M20 12c3 0 5 1 6 4 1 3 0 6-3 8l-1 5-4-1-1-3-3 1-1-3c-2-2-3-5-2-7 1-3 4-4 8-4z"/><path d="M13 34h19"/><path d="M12 38h21"/></g></svg>';
         }
         if (piece.toUpperCase() === 'P') {
-            return '<svg viewBox="0 0 45 45"><g ' + common + '><circle cx="22.5" cy="14" r="4"/><path d="M22.5 18v9"/><path d="M15.5 32c5.5 3 16.5 3 22 0"/><path d="M15.5 36c5.5 3 16.5 3 22 0"/><path d="M15.5 40c5.5 3 16.5 3 22 0"/></g></svg>';
+            return '<svg viewBox="0 0 45 45"><g fill="' + fill + '" ' + s + '><circle cx="22.5" cy="15" r="4"/><path d="M22.5 19v7"/><path d="M15 34h15"/><path d="M14 38h17"/></g></svg>';
         }
         return '';
     }

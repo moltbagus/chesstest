@@ -164,7 +164,11 @@
                     if (style === 'google') {
                         pieceEl = document.createElement('span');
                         pieceEl.className = 'piece google-piece';
-                        pieceEl.innerHTML = getGooglePieceSVG(piece);
+                        var image = document.createElement('img');
+                        image.src = getGooglePiecePath(piece);
+                        image.alt = getPieceName(piece);
+                        image.draggable = false;
+                        pieceEl.appendChild(image);
                     } else {
                         pieceEl = document.createElement('span');
                         pieceEl.className = 'piece';
@@ -458,31 +462,9 @@
         return map[piece] || piece;
     }
 
-    function getGooglePieceSVG(piece) {
-        var isWhite = piece === piece.toUpperCase();
-        var fill = isWhite ? '#f1f3f4' : '#202124';
-        var stroke = isWhite ? '#202124' : '#f1f3f4';
-        var s = 'stroke="' + stroke + '" stroke-width="1.5" stroke-linejoin="round"';
-
-        if (piece.toUpperCase() === 'K') {
-            return '<svg viewBox="0 0 45 45"><g fill="' + fill + '" ' + s + '><path d="M22.5 9v7"/><path d="M20 11h5"/><circle cx="22.5" cy="20" r="3.5"/><path d="M22.5 23.5v3"/><path d="M16.5 26.5h12l-1.5 4H18z"/><path d="M13 35h19"/><path d="M12 39h21"/></g></svg>';
-        }
-        if (piece.toUpperCase() === 'Q') {
-            return '<svg viewBox="0 0 45 45"><g fill="' + fill + '" ' + s + '><circle cx="22.5" cy="10" r="3"/><path d="M19.5 13l3 7 3-7"/><path d="M22.5 20v4"/><path d="M15 32h15"/><path d="M14 36h17"/><path d="M13 40h19"/></g></svg>';
-        }
-        if (piece.toUpperCase() === 'R') {
-            return '<svg viewBox="0 0 45 45"><g fill="' + fill + '" ' + s + '><path d="M11 9h23v6H11z"/><path d="M13 15v4h19v-4"/><path d="M12 19h21v13H12z"/><path d="M11 32h23v5H11z"/></g></svg>';
-        }
-        if (piece.toUpperCase() === 'B') {
-            return '<svg viewBox="0 0 45 45"><g fill="' + fill + '" ' + s + '><circle cx="22.5" cy="12" r="4"/><path d="M22.5 16v5"/><path d="M16.5 21h12l-2.5 7H19z"/><path d="M14 34h17"/><path d="M13 38h19"/></g></svg>';
-        }
-        if (piece.toUpperCase() === 'N') {
-            return '<svg viewBox="0 0 45 45"><g fill="' + fill + '" ' + s + '><path d="M14 33l2 3h13l2-3"/><path d="M19 12c3.5 0 5.5 1.5 6.5 4 1 3-0.5 6-3.5 8l-1 4-4-1-1-3-3 1-1-3c-2-2-3-4.5-2.5-7 1-3 4-3.5 8.5-3.5z"/><path d="M14 34h17"/><path d="M13 38h19"/></g></svg>';
-        }
-        if (piece.toUpperCase() === 'P') {
-            return '<svg viewBox="0 0 45 45"><g fill="' + fill + '" ' + s + '><circle cx="22.5" cy="15" r="4"/><path d="M22.5 19v8"/><path d="M15 34h15"/><path d="M14 38h17"/></g></svg>';
-        }
-        return '';
+    function getGooglePiecePath(piece) {
+        var color = piece === piece.toUpperCase() ? 'w' : 'b';
+        return 'assets/pieces/cburnett/' + color + piece.toUpperCase() + '.svg';
     }
 
     function launchConfetti() {
